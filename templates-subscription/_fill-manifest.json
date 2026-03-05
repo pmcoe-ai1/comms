@@ -1,0 +1,33 @@
+{
+  "generatedAt": "2026-03-05T05:13:52.307Z",
+  "canonicalModelId": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+  "canonicalModelVersion": "1.0.0",
+  "canonicalModelDomain": "subscription-billing",
+  "totalRulesNeedingFill": 2,
+  "templates": [
+    {
+      "ruleId": "activate-on-trial-start",
+      "slots": [
+        "condition",
+        "action"
+      ],
+      "template": "templates-subscription/activate-on-trial-start.fill-template.yaml",
+      "filled": false,
+      "filledAt": null,
+      "filledBy": null,
+      "gateResult": null
+    },
+    {
+      "ruleId": "convert-trial-on-renewal",
+      "slots": [
+        "condition",
+        "action"
+      ],
+      "template": "templates-subscription/convert-trial-on-renewal.fill-template.yaml",
+      "filled": false,
+      "filledAt": null,
+      "filledBy": null,
+      "gateResult": null
+    }
+  ]
+}

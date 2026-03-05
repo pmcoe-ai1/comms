@@ -1,0 +1,93 @@
+// ─────────────────────────────────────────────────────────────────────────────
+// GENERATED FILE — do not edit manually.
+// Source: canonical-model.yaml v1.0.0
+// Generator: codegen.js
+// Regenerate: node codegen.js example.canonical-model.yaml
+// ─────────────────────────────────────────────────────────────────────────────
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum OrderStatus {
+  pending
+  confirmed
+  processing
+  shipped
+  delivered
+  cancelled
+  refunded
+}
+
+/// intentRef: multiple
+/// canonicalModelVersion: 1.0.0
+/// entityRef: order
+model Order {
+  id              String  @id @default(uuid())
+  customerId      String
+  status          OrderStatus  @default(pending)
+  total           Decimal  @db.Decimal(10, 2)
+  discount        Decimal  @db.Decimal(10, 2) @default(0)
+  shippingAddress Json
+  tags            String[]
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+  deletedAt         DateTime?  // softDelete: true
+
+  orderItems      OrderItem[]
+  customer        Customer  @relation(fields: [customerId], references: [id])
+
+  @@index([customerId])
+  @@index([status])
+  @@index([createdAt])
+}
+
+/// intentRef: customer
+/// canonicalModelVersion: 1.0.0
+/// entityRef: customer
+model Customer {
+  id              String  @id @default(uuid())
+  email           String  @unique
+  createdAt       DateTime  @default(now())
+
+  orders          Order[]
+
+}
+
+/// intentRef: product
+/// canonicalModelVersion: 1.0.0
+/// entityRef: product
+model Product {
+  id              String  @id @default(uuid())
+  sku             String  @unique
+  name            String
+  price           Decimal  @db.Decimal(10, 2)
+  stockLevel      Int  @default(0)
+  createdAt       DateTime  @default(now())
+
+  orderItems      OrderItem[]
+
+}
+
+/// intentRef: prevent-oversell
+/// canonicalModelVersion: 1.0.0
+/// entityRef: order-item
+model OrderItem {
+  id              String  @id @default(uuid())
+  orderId         String
+  productId       String
+  quantity        Int
+  unitPrice       Decimal  @db.Decimal(10, 2)
+
+  order           Order  @relation(fields: [orderId], references: [id])
+  product         Product  @relation(fields: [productId], references: [id])
+
+  @@index([orderId])
+  @@index([productId])
+  @@unique([orderId, productId])
+}

@@ -1,0 +1,28 @@
+{
+  "name": "dkce-prototype",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Domain Knowledge Crystallisation Engine prototype",
+  "scripts": {
+    "test": "jest",
+    "test:coverage": "jest --coverage",
+    "test:scenarios": "jest tests/scenarios",
+    "test:watch": "jest --watch",
+    "validate": "node validate.js",
+    "codegen": "node codegen.js example.canonical-model.yaml --output-dir ./generated",
+    "gate:stage1": "node gate.js",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "ajv": "^8.18.0",
+    "ajv-formats": "^3.0.1",
+    "js-yaml": "^4.1.0"
+  },
+  "devDependencies": {
+    "@types/jest": "^30.0.0",
+    "jest": "^30.2.0",
+    "prisma": "^5.22.0",
+    "ts-jest": "^29.4.6",
+    "typescript": "^5.4.0"
+  }
+}

@@ -1,0 +1,2207 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://dkce.io/canonical-model/v2.1.0/schema",
+  "title": "Canonical Model",
+  "description": "Single source of truth for all layer interactions. v2.0.0 — added knownVectors for declared governance gaps. v1.3.0 — arithmetic action types removed (use set+ArithmeticExpression), ArithmeticExpression.$value restricted to number, LifecycleTransition.emits is array, refEntity constrained to uuid/integer fields, UIContract.intentRef optional, cross-entity and expression composition documented as known limitations. v2.1.0 — added TemporalReference type to ExpressionValue (closes BUG-009/DESIGN-001). Replaces string-based $now workaround with structured { $temporal: \"now\" } and { $dateAdd: { $field, offset, unit } } for date arithmetic.",
+  "type": "object",
+  "required": [
+    "meta",
+    "glossary",
+    "intents",
+    "scenarios",
+    "entities",
+    "rules",
+    "operations",
+    "events"
+  ],
+  "additionalProperties": false,
+  "properties": {
+    "meta": {
+      "type": "object",
+      "required": [
+        "id",
+        "version",
+        "status",
+        "createdAt"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "version": {
+          "type": "string",
+          "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+$"
+        },
+        "status": {
+          "type": "string",
+          "enum": [
+            "draft",
+            "approved",
+            "deprecated"
+          ]
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "approvedBy": {
+          "type": "string"
+        },
+        "approvedAt": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "chainHash": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}$"
+        },
+        "prevHash": {
+          "oneOf": [
+            {
+              "type": "string",
+              "pattern": "^[a-f0-9]{64}$"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "description": "null for v1.0.0."
+        },
+        "description": {
+          "type": "string"
+        },
+        "domain": {
+          "type": "string"
+        },
+        "owners": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "changeReason": {
+          "oneOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "if": {
+        "properties": {
+          "status": {
+            "const": "approved"
+          }
+        }
+      },
+      "then": {
+        "required": [
+          "approvedBy",
+          "approvedAt"
+        ]
+      }
+    },
+    "glossary": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "$ref": "#/$defs/GlossaryTerm"
+      }
+    },
+    "intents": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "$ref": "#/$defs/Intent"
+      }
+    },
+    "scenarios": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "$ref": "#/$defs/Scenario"
+      }
+    },
+    "scenarioCoverage": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/ScenarioCoverage"
+      }
+    },
+    "entities": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "$ref": "#/$defs/Entity"
+      }
+    },
+    "events": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/DomainEvent"
+      },
+      "description": "Domain event registry. Every event id referenced in a RuleAction must be declared here."
+    },
+    "rules": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/Rule"
+      }
+    },
+    "operations": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/Operation"
+      }
+    },
+    "uiContracts": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/UIContract"
+      }
+    },
+    "integrationContracts": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/IntegrationContract"
+      }
+    },
+    "knownVectors": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "id",
+          "surface",
+          "description",
+          "severity",
+          "resolution"
+        ],
+        "additionalProperties": true,
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "surface": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string"
+          },
+          "severity": {
+            "type": "string",
+            "enum": [
+              "low",
+              "medium",
+              "high",
+              "critical"
+            ]
+          },
+          "affectedComponents": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "discoveredAt": {
+            "type": "string"
+          },
+          "discoveredBy": {
+            "type": "string"
+          },
+          "rationale": {
+            "type": "string"
+          },
+          "resolution": {
+            "type": "string",
+            "enum": [
+              "pending",
+              "in-progress",
+              "closed"
+            ]
+          },
+          "resolutionApproach": {
+            "type": "string"
+          },
+          "resolutionTarget": {
+            "type": "string"
+          },
+          "relatedGaps": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        }
+      }
+    }
+  },
+  "$defs": {
+    "ScalarValue": {
+      "description": "A typed scalar value used in conditions, actions, defaults, and scenario field references.",
+      "oneOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "number"
+        },
+        {
+          "type": "boolean"
+        },
+        {
+          "type": "null"
+        },
+        {
+          "type": "array",
+          "items": {
+            "oneOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "number"
+              },
+              {
+                "type": "boolean"
+              }
+            ]
+          }
+        }
+      ]
+    },
+    "GlossaryTerm": {
+      "type": "object",
+      "required": [
+        "id",
+        "term",
+        "definition"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^[a-z][a-z0-9_-]*$"
+        },
+        "term": {
+          "type": "string"
+        },
+        "definition": {
+          "type": "string"
+        },
+        "examples": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "counterexamples": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "synonyms": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "precision": {
+          "$ref": "#/$defs/Precision"
+        },
+        "conceptVersion": {
+          "type": "string",
+          "pattern": "^[0-9]+\\.[0-9]+$"
+        },
+        "notes": {
+          "type": "string"
+        }
+      }
+    },
+    "Precision": {
+      "type": "object",
+      "required": [
+        "type"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "type": {
+          "type": "string",
+          "enum": [
+            "enum",
+            "range",
+            "pattern",
+            "boolean"
+          ]
+        },
+        "values": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "minItems": 1
+        },
+        "min": {
+          "type": "number"
+        },
+        "max": {
+          "type": "number"
+        },
+        "pattern": {
+          "type": "string"
+        },
+        "unit": {
+          "type": "string"
+        }
+      },
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "type": {
+                "const": "enum"
+              }
+            }
+          },
+          "then": {
+            "required": [
+              "values"
+            ]
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "type": {
+                "const": "range"
+              }
+            }
+          },
+          "then": {
+            "required": [
+              "min",
+              "max"
+            ]
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "type": {
+                "const": "pattern"
+              }
+            }
+          },
+          "then": {
+            "required": [
+              "pattern"
+            ]
+          }
+        }
+      ]
+    },
+    "Intent": {
+      "type": "object",
+      "required": [
+        "id",
+        "name",
+        "description",
+        "status"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^[a-z][a-z0-9_-]*$"
+        },
+        "name": {
+          "type": "string"
+        },
+        "description": {
+          "type": "string"
+        },
+        "status": {
+          "type": "string",
+          "enum": [
+            "draft",
+            "approved",
+            "deprecated"
+          ]
+        },
+        "approvedBy": {
+          "type": "string"
+        },
+        "approvedAt": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "version": {
+          "type": "string",
+          "pattern": "^[0-9]+\\.[0-9]+$"
+        },
+        "priority": {
+          "type": "string",
+          "enum": [
+            "must",
+            "should",
+            "could"
+          ]
+        },
+        "rationale": {
+          "type": "string"
+        },
+        "tags": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "glossaryRefs": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "relatedIntents": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      },
+      "if": {
+        "properties": {
+          "status": {
+            "const": "approved"
+          }
+        }
+      },
+      "then": {
+        "required": [
+          "approvedBy",
+          "approvedAt"
+        ]
+      }
+    },
+    "Scenario": {
+      "type": "object",
+      "required": [
+        "id",
+        "intentRef",
+        "given",
+        "when",
+        "then",
+        "coverageType",
+        "expectedResult"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^[a-z][a-z0-9_-]*$"
+        },
+        "intentRef": {
+          "type": "string"
+        },
+        "name": {
+          "type": "string"
+        },
+        "given": {
+          "type": "string"
+        },
+        "when": {
+          "type": "string"
+        },
+        "then": {
+          "type": "string"
+        },
+        "coverageType": {
+          "type": "string",
+          "enum": [
+            "happy",
+            "edge",
+            "failure",
+            "security",
+            "performance"
+          ]
+        },
+        "entityRefs": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "fieldRefs": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/FieldRef"
+          }
+        },
+        "ruleRefs": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "priority": {
+          "type": "string",
+          "enum": [
+            "must-pass",
+            "should-pass",
+            "informational"
+          ]
+        },
+        "automatable": {
+          "type": "boolean",
+          "default": true
+        },
+        "notes": {
+          "type": "string"
+        },
+        "expectedResult": {
+          "type": "boolean",
+          "description": "Whether the rule condition is expected to evaluate to true or false for this scenario."
+        },
+        "outputFieldRefs": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/FieldRef"
+          },
+          "description": "Expected field values after the rule action executes. Same structure as fieldRefs."
+        }
+      }
+    },
+    "FieldRef": {
+      "type": "object",
+      "required": [
+        "entityId",
+        "fieldId"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "entityId": {
+          "type": "string"
+        },
+        "fieldId": {
+          "type": "string"
+        },
+        "value": {
+          "$ref": "#/$defs/LiteralValue"
+        }
+      }
+    },
+    "ScenarioCoverage": {
+      "type": "object",
+      "required": [
+        "intentRef",
+        "deployGate"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "intentRef": {
+          "type": "string"
+        },
+        "deployGate": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 100
+        },
+        "happyPathRequired": {
+          "type": "boolean",
+          "default": true
+        },
+        "edgeCaseMinimum": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "failurePathMinimum": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "notes": {
+          "type": "string"
+        }
+      }
+    },
+    "Entity": {
+      "type": "object",
+      "required": [
+        "id",
+        "name",
+        "glossaryRef",
+        "fields"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^[a-z][a-z0-9_-]*$"
+        },
+        "name": {
+          "type": "string"
+        },
+        "glossaryRef": {
+          "type": "string"
+        },
+        "description": {
+          "type": "string"
+        },
+        "fields": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "$ref": "#/$defs/Field"
+          }
+        },
+        "relations": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/Relation"
+          }
+        },
+        "indexes": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/Index"
+          }
+        },
+        "lifecycle": {
+          "$ref": "#/$defs/Lifecycle"
+        },
+        "version": {
+          "type": "string",
+          "pattern": "^[0-9]+\\.[0-9]+$"
+        },
+        "immutable": {
+          "type": "boolean",
+          "default": false
+        },
+        "softDelete": {
+          "type": "boolean",
+          "default": false
+        },
+        "tags": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "Lifecycle": {
+      "type": "object",
+      "description": "State machine for an entity with an enum status field. Enforcement gate validates that rule actions only reach valid states from valid source states.",
+      "required": [
+        "statusField",
+        "initialState",
+        "transitions"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "statusField": {
+          "type": "string"
+        },
+        "initialState": {
+          "type": "string"
+        },
+        "terminalStates": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "transitions": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "$ref": "#/$defs/LifecycleTransition"
+          }
+        }
+      }
+    },
+    "LifecycleTransition": {
+      "type": "object",
+      "required": [
+        "from",
+        "to"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "from": {
+          "type": "string"
+        },
+        "to": {
+          "type": "string"
+        },
+        "trigger": {
+          "type": "string",
+          "description": "Rule id or operation id that causes this transition."
+        },
+        "guard": {
+          "type": "string",
+          "description": "Human description of the condition required for this transition."
+        },
+        "emits": {
+          "oneOf": [
+            {
+              "type": "array",
+              "items": {
+                "type": "string"
+              },
+              "minItems": 1,
+              "description": "Event ids emitted when this transition occurs."
+            },
+            {
+              "type": "string",
+              "description": "Single event id (convenience shorthand for a one-element array)."
+            }
+          ],
+          "description": "Event id(s) emitted when this transition occurs. Use array for multiple events."
+        },
+        "description": {
+          "type": "string"
+        }
+      }
+    },
+    "Field": {
+      "type": "object",
+      "required": [
+        "id",
+        "name",
+        "type"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^[a-z][a-z0-9_-]*$"
+        },
+        "name": {
+          "type": "string"
+        },
+        "type": {
+          "type": "string",
+          "enum": [
+            "string",
+            "integer",
+            "decimal",
+            "boolean",
+            "datetime",
+            "date",
+            "uuid",
+            "enum",
+            "array",
+            "object"
+          ]
+        },
+        "glossaryRef": {
+          "type": "string"
+        },
+        "required": {
+          "type": "boolean",
+          "default": false
+        },
+        "nullable": {
+          "type": "boolean",
+          "default": false
+        },
+        "unique": {
+          "type": "boolean",
+          "default": false
+        },
+        "immutable": {
+          "type": "boolean",
+          "default": false
+        },
+        "systemField": {
+          "type": "boolean",
+          "default": false
+        },
+        "enumValues": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "minItems": 2
+        },
+        "itemType": {
+          "type": "string",
+          "pattern": "^(string|integer|decimal|boolean|uuid|datetime|date|ref:[a-z][a-z0-9_-]*)$",
+          "description": "Element type for array fields. Primitives by name or 'ref:entityId' for entity references."
+        },
+        "objectSchema": {
+          "$ref": "#/$defs/ObjectSchema",
+          "description": "Required when type is object. Defines internal structure."
+        },
+        "refEntity": {
+          "type": "string",
+          "description": "Entity id this field references. Used with type: uuid (or integer) to declare a foreign key relationship. The generator creates a FK constraint and type-safe reference. Only valid when the field's type matches the referenced entity's id field type."
+        },
+        "defaultValue": {
+          "$ref": "#/$defs/LiteralValue"
+        },
+        "validation": {
+          "$ref": "#/$defs/FieldValidation"
+        },
+        "description": {
+          "type": "string"
+        }
+      },
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "type": {
+                "const": "enum"
+              }
+            }
+          },
+          "then": {
+            "required": [
+              "enumValues"
+            ]
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "type": {
+                "const": "array"
+              }
+            }
+          },
+          "then": {
+            "required": [
+              "itemType"
+            ]
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "type": {
+                "const": "object"
+              }
+            }
+          },
+          "then": {
+            "required": [
+              "objectSchema"
+            ]
+          }
+        },
+        {
+          "if": {
+            "required": [
+              "refEntity"
+            ]
+          },
+          "then": {
+            "properties": {
+              "type": {
+                "enum": [
+                  "uuid",
+                  "integer"
+                ]
+              }
+            },
+            "description": "refEntity is only valid on uuid or integer fields (FK columns)."
+          }
+        }
+      ]
+    },
+    "ObjectSchema": {
+      "type": "object",
+      "description": "Nested structure of an embedded object field. Recursively supports all Field types.",
+      "required": [
+        "fields"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "fields": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "$ref": "#/$defs/Field"
+          }
+        },
+        "additionalProperties": {
+          "type": "boolean",
+          "default": false
+        }
+      }
+    },
+    "FieldValidation": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "min": {
+          "type": "number"
+        },
+        "max": {
+          "type": "number"
+        },
+        "minLength": {
+          "type": "integer"
+        },
+        "maxLength": {
+          "type": "integer"
+        },
+        "pattern": {
+          "type": "string"
+        },
+        "precision": {
+          "type": "integer"
+        },
+        "scale": {
+          "type": "integer"
+        },
+        "customMessage": {
+          "type": "string"
+        }
+      }
+    },
+    "Relation": {
+      "type": "object",
+      "required": [
+        "id",
+        "type",
+        "targetEntity",
+        "fromField",
+        "toField"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^[a-z][a-z0-9_-]*$"
+        },
+        "type": {
+          "type": "string",
+          "enum": [
+            "one-to-one",
+            "one-to-many",
+            "many-to-many",
+            "many-to-one"
+          ],
+          "description": "Cardinality. one-to-many: this entity has many of target. many-to-one: many of this entity belong to one target. one-to-one: exactly one on each side. many-to-many: requires joinEntity."
+        },
+        "targetEntity": {
+          "type": "string"
+        },
+        "fromField": {
+          "type": "string"
+        },
+        "toField": {
+          "type": "string"
+        },
+        "joinEntity": {
+          "type": "string",
+          "description": "Required for many-to-many. The join entity must be declared in entities with its own fields."
+        },
+        "cascade": {
+          "type": "string",
+          "enum": [
+            "none",
+            "delete",
+            "nullify"
+          ],
+          "default": "none"
+        },
+        "description": {
+          "type": "string"
+        }
+      },
+      "if": {
+        "properties": {
+          "type": {
+            "const": "many-to-many"
+          }
+        }
+      },
+      "then": {
+        "required": [
+          "joinEntity"
+        ]
+      }
+    },
+    "Index": {
+      "type": "object",
+      "required": [
+        "fields"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "fields": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "minItems": 1
+        },
+        "unique": {
+          "type": "boolean",
+          "default": false
+        },
+        "name": {
+          "type": "string"
+        }
+      }
+    },
+    "DomainEvent": {
+      "type": "object",
+      "description": "A named domain event. Every event emitted by a rule must be registered here with its payload shape and known subscribers.",
+      "required": [
+        "id",
+        "name",
+        "entityRef"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^[a-z][a-z0-9_.-]*$",
+          "description": "Convention: entity.verb. e.g. order.confirmed, payment.failed"
+        },
+        "name": {
+          "type": "string"
+        },
+        "description": {
+          "type": "string"
+        },
+        "entityRef": {
+          "type": "string"
+        },
+        "payloadFields": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "Field ids from entityRef included in payload. Empty = full entity."
+        },
+        "subscribers": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "Service ids or operation ids that consume this event."
+        },
+        "intentRef": {
+          "type": "string"
+        },
+        "version": {
+          "type": "string",
+          "pattern": "^[0-9]+\\.[0-9]+$"
+        },
+        "tags": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "Rule": {
+      "type": "object",
+      "required": [
+        "id",
+        "name",
+        "intentRef",
+        "entityRef"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^[a-z][a-z0-9_-]*$"
+        },
+        "name": {
+          "type": "string"
+        },
+        "description": {
+          "type": "string"
+        },
+        "intentRef": {
+          "type": "string"
+        },
+        "entityRef": {
+          "type": "string"
+        },
+        "scenarioRefs": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "condition": {
+          "oneOf": [
+            {
+              "$ref": "#/$defs/RuleCondition"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "description": "null = awaiting AI fill via template layer."
+        },
+        "action": {
+          "oneOf": [
+            {
+              "$ref": "#/$defs/RuleAction"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "description": "null = awaiting AI fill via template layer."
+        },
+        "elseAction": {
+          "oneOf": [
+            {
+              "$ref": "#/$defs/RuleAction"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "priority": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "enabled": {
+          "type": "boolean",
+          "default": true
+        },
+        "tags": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "RuleCondition": {
+      "description": "A condition node. Either a leaf (single field comparison) or a compound boolean. oneOf enforces exactly one structural form.",
+      "oneOf": [
+        {
+          "$ref": "#/$defs/LeafCondition"
+        },
+        {
+          "$ref": "#/$defs/AndCondition"
+        },
+        {
+          "$ref": "#/$defs/OrCondition"
+        },
+        {
+          "$ref": "#/$defs/NotCondition"
+        }
+      ]
+    },
+    "LeafCondition": {
+      "type": "object",
+      "description": "Terminal condition node. A single field comparison against a field on the rule's entityRef. KNOWN LIMITATION: LeafCondition can only reference fields on the rule's declared entityRef. Cross-entity conditions (e.g. check product.stockLevel from an order-item rule) cannot be expressed here. Cross-entity logic belongs at the operation layer: the operation pre-fetches the related entity and passes the required values as inputs, keeping each rule single-entity.",
+      "required": [
+        "field",
+        "operator"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "field": {
+          "type": "string"
+        },
+        "operator": {
+          "type": "string",
+          "enum": [
+            "eq",
+            "neq",
+            "gt",
+            "gte",
+            "lt",
+            "lte",
+            "in",
+            "not-in",
+            "contains",
+            "starts-with",
+            "ends-with",
+            "is-null",
+            "is-not-null"
+          ]
+        },
+        "value": {
+          "$ref": "#/$defs/ExpressionValue"
+        }
+      },
+      "allOf": [
+        {
+          "if": {
+            "not": {
+              "properties": {
+                "operator": {
+                  "enum": [
+                    "is-null",
+                    "is-not-null"
+                  ]
+                }
+              }
+            }
+          },
+          "then": {
+            "required": [
+              "value"
+            ]
+          }
+        }
+      ]
+    },
+    "AndCondition": {
+      "type": "object",
+      "description": "All sub-conditions must be true. minItems 2 — a single-element AND is a LeafCondition.",
+      "required": [
+        "and"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "and": {
+          "type": "array",
+          "minItems": 2,
+          "items": {
+            "$ref": "#/$defs/RuleCondition"
+          }
+        }
+      }
+    },
+    "OrCondition": {
+      "type": "object",
+      "description": "At least one sub-condition must be true.",
+      "required": [
+        "or"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "or": {
+          "type": "array",
+          "minItems": 2,
+          "items": {
+            "$ref": "#/$defs/RuleCondition"
+          }
+        }
+      }
+    },
+    "NotCondition": {
+      "type": "object",
+      "description": "Negation of a single condition.",
+      "required": [
+        "not"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "not": {
+          "$ref": "#/$defs/RuleCondition"
+        }
+      }
+    },
+    "RuleAction": {
+      "type": "object",
+      "description": "Action performed when rule condition is met. type determines which fields are required.",
+      "required": [
+        "type"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "type": {
+          "type": "string",
+          "enum": [
+            "set",
+            "append",
+            "remove",
+            "emit-event",
+            "call-operation"
+          ],
+          "description": "The kind of action. set: assign a value (literal, field reference, or arithmetic expression) to a field. append: add an element to an array field. remove: remove an element from an array field. emit-event: emit a domain event. call-operation: invoke another operation. Note: arithmetic operations (multiply, divide, add, subtract) were removed in v1.3.0. Use type: set with an ArithmeticExpression value instead. e.g. set discount = total * 0.1 → type: set, field: discount, value: {$field: total, $op: multiply, $value: 0.1}"
+        },
+        "field": {
+          "type": "string"
+        },
+        "value": {
+          "$ref": "#/$defs/ExpressionValue"
+        },
+        "event": {
+          "type": "string",
+          "description": "Event id from the events registry."
+        },
+        "operation": {
+          "type": "string"
+        },
+        "then": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/RuleAction"
+          }
+        }
+      },
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "type": {
+                "enum": [
+                  "set",
+                  "append",
+                  "remove"
+                ]
+              }
+            }
+          },
+          "then": {
+            "required": [
+              "field",
+              "value"
+            ]
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "type": {
+                "const": "emit-event"
+              }
+            }
+          },
+          "then": {
+            "required": [
+              "event"
+            ]
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "type": {
+                "const": "call-operation"
+              }
+            }
+          },
+          "then": {
+            "required": [
+              "operation"
+            ]
+          }
+        }
+      ]
+    },
+    "Operation": {
+      "type": "object",
+      "description": "Agreed API operation. inputEntity and outputEntity optional to support DELETE and 204 responses. Collection responses use pagination.",
+      "required": [
+        "id",
+        "name",
+        "method",
+        "path",
+        "outputMode",
+        "inputMode"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^[a-z][a-z0-9_-]*$"
+        },
+        "name": {
+          "type": "string"
+        },
+        "description": {
+          "type": "string"
+        },
+        "method": {
+          "type": "string",
+          "enum": [
+            "GET",
+            "POST",
+            "PUT",
+            "PATCH",
+            "DELETE"
+          ]
+        },
+        "path": {
+          "type": "string",
+          "pattern": "^/"
+        },
+        "pathParams": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/PathParam"
+          }
+        },
+        "inputMode": {
+          "type": "string",
+          "enum": [
+            "body",
+            "query",
+            "none"
+          ],
+          "default": "body",
+          "description": "body = POST/PUT/PATCH request body. query = GET query params. none = no input."
+        },
+        "inputEntity": {
+          "type": "string"
+        },
+        "outputMode": {
+          "type": "string",
+          "enum": [
+            "single",
+            "collection",
+            "none"
+          ],
+          "default": "single",
+          "description": "single = one entity. collection = paginated list. none = 204 No Content."
+        },
+        "outputEntity": {
+          "type": "string"
+        },
+        "pagination": {
+          "$ref": "#/$defs/Pagination"
+        },
+        "errorResponses": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/ErrorResponse"
+          }
+        },
+        "ruleRefs": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "scenarioRefs": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "intentRef": {
+          "type": "string"
+        },
+        "auth": {
+          "$ref": "#/$defs/AuthSpec"
+        },
+        "rateLimit": {
+          "$ref": "#/$defs/RateLimit"
+        },
+        "deprecated": {
+          "type": "boolean",
+          "default": false
+        },
+        "deprecatedAt": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "sunsetAt": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "tags": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "operationContract": {
+          "type": "object",
+          "required": [
+            "steps"
+          ],
+          "additionalProperties": false,
+          "properties": {
+            "steps": {
+              "type": "array",
+              "minItems": 1,
+              "items": {
+                "type": "object",
+                "required": [
+                  "id",
+                  "type"
+                ],
+                "additionalProperties": false,
+                "properties": {
+                  "id": {
+                    "type": "string"
+                  },
+                  "type": {
+                    "type": "string",
+                    "enum": [
+                      "apply-rule",
+                      "call-operation",
+                      "emit-event",
+                      "db-write"
+                    ]
+                  },
+                  "ruleRef": {
+                    "type": "string"
+                  },
+                  "target": {
+                    "type": "string"
+                  },
+                  "eventRef": {
+                    "type": "string"
+                  },
+                  "inputs": {
+                    "type": "object",
+                    "additionalProperties": {
+                      "type": "string"
+                    }
+                  },
+                  "onSuccess": {
+                    "type": "string",
+                    "enum": [
+                      "continue",
+                      "return"
+                    ]
+                  },
+                  "onFailure": {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "properties": {
+                      "throw": {
+                        "type": "string"
+                      },
+                      "log": {
+                        "type": "string"
+                      },
+                      "continue": {
+                        "type": "boolean"
+                      },
+                      "retry": {
+                        "type": "object",
+                        "additionalProperties": false,
+                        "properties": {
+                          "maxAttempts": {
+                            "type": "integer"
+                          },
+                          "backoffMs": {
+                            "type": "integer"
+                          }
+                        }
+                      }
+                    }
+                  },
+                  "onVersionMismatch": {
+                    "type": "string",
+                    "enum": [
+                      "retry-with-backoff",
+                      "fail",
+                      "continue"
+                    ]
+                  },
+                  "compensatedBy": {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "properties": {
+                      "type": {
+                        "type": "string",
+                        "enum": [
+                          "call-operation",
+                          "apply-rule",
+                          "emit-event"
+                        ]
+                      },
+                      "target": {
+                        "type": "string"
+                      },
+                      "ruleRef": {
+                        "type": "string"
+                      },
+                      "eventRef": {
+                        "type": "string"
+                      },
+                      "inputs": {
+                        "type": "object",
+                        "additionalProperties": {
+                          "type": "string"
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "outputMode": {
+                "const": "single"
+              }
+            }
+          },
+          "then": {
+            "required": [
+              "outputEntity"
+            ]
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "outputMode": {
+                "const": "collection"
+              }
+            }
+          },
+          "then": {
+            "required": [
+              "outputEntity",
+              "pagination"
+            ]
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "inputMode": {
+                "enum": [
+                  "body",
+                  "query"
+                ]
+              }
+            },
+            "required": [
+              "inputMode"
+            ]
+          },
+          "then": {
+            "required": [
+              "inputEntity"
+            ]
+          }
+        }
+      ]
+    },
+    "PathParam": {
+      "type": "object",
+      "description": "Declaration for a {paramName} path placeholder. Links parameter to its entity field for type safety.",
+      "required": [
+        "name",
+        "type"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "name": {
+          "type": "string"
+        },
+        "type": {
+          "type": "string",
+          "enum": [
+            "uuid",
+            "string",
+            "integer"
+          ]
+        },
+        "entityRef": {
+          "type": "string"
+        },
+        "fieldRef": {
+          "type": "string"
+        },
+        "description": {
+          "type": "string"
+        }
+      }
+    },
+    "Pagination": {
+      "type": "object",
+      "description": "Pagination contract for collection endpoints.",
+      "required": [
+        "strategy"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "strategy": {
+          "type": "string",
+          "enum": [
+            "cursor",
+            "offset",
+            "page"
+          ]
+        },
+        "defaultSize": {
+          "type": "integer",
+          "minimum": 1,
+          "default": 20
+        },
+        "maxSize": {
+          "type": "integer",
+          "minimum": 1,
+          "default": 100
+        },
+        "sortableFields": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "filterableFields": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "ErrorResponse": {
+      "type": "object",
+      "description": "A declared error response. AI-generated implementations must handle all declared errors. Enforcement gate validates this.",
+      "required": [
+        "statusCode",
+        "code"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "statusCode": {
+          "type": "integer",
+          "minimum": 400,
+          "maximum": 599
+        },
+        "code": {
+          "type": "string",
+          "description": "Machine-readable error code. e.g. ORDER_NOT_FOUND"
+        },
+        "description": {
+          "type": "string"
+        },
+        "intentRef": {
+          "type": "string"
+        }
+      }
+    },
+    "AuthSpec": {
+      "type": "object",
+      "required": [
+        "required"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "required": {
+          "type": "boolean"
+        },
+        "schemes": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "enum": [
+              "bearer",
+              "apiKey",
+              "oauth2",
+              "basic"
+            ]
+          }
+        },
+        "roles": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "scopes": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "RateLimit": {
+      "type": "object",
+      "required": [
+        "requests",
+        "window"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "requests": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "window": {
+          "type": "string",
+          "pattern": "^[0-9]+(s|m|h|d)$"
+        },
+        "scope": {
+          "type": "string",
+          "enum": [
+            "user",
+            "org",
+            "global"
+          ],
+          "default": "user"
+        }
+      }
+    },
+    "UIContract": {
+      "type": "object",
+      "required": [
+        "id",
+        "entityRef",
+        "visibleFields"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^[a-z][a-z0-9_-]*$"
+        },
+        "name": {
+          "type": "string"
+        },
+        "entityRef": {
+          "type": "string"
+        },
+        "intentRef": {
+          "type": "string",
+          "description": "Intent id this contract primarily serves. Optional — omit for cross-cutting views that serve multiple intents (e.g. an order summary that applies to all order intents). When present, the enforcement gate checks that this UIContract's visibleFields are consistent with the intent's entity scope."
+        },
+        "visibleFields": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "minItems": 1
+        },
+        "editableFields": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "requiredFields": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "View-context required. May differ from Field.required — a field optional on the entity may be required in a specific form. Consistency is enforced by validation tooling, not this schema."
+        },
+        "validationRefs": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "displayMode": {
+          "type": "string",
+          "enum": [
+            "form",
+            "table",
+            "detail",
+            "summary",
+            "card"
+          ]
+        },
+        "context": {
+          "type": "string"
+        }
+      }
+    },
+    "IntegrationContract": {
+      "type": "object",
+      "required": [
+        "id",
+        "name",
+        "producer",
+        "consumers",
+        "sharedEntityRef",
+        "sharedOperationRef",
+        "version"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^[a-z][a-z0-9_-]*$"
+        },
+        "name": {
+          "type": "string"
+        },
+        "description": {
+          "type": "string"
+        },
+        "producer": {
+          "$ref": "#/$defs/Organisation"
+        },
+        "consumers": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "$ref": "#/$defs/Organisation"
+          }
+        },
+        "sharedEntityRef": {
+          "type": "string"
+        },
+        "sharedOperationRef": {
+          "type": "string"
+        },
+        "scenarioRefs": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "version": {
+          "type": "string",
+          "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+$"
+        },
+        "signatures": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/Signature"
+          }
+        },
+        "status": {
+          "type": "string",
+          "enum": [
+            "draft",
+            "pending-signatures",
+            "active",
+            "deprecated",
+            "sunset"
+          ]
+        },
+        "effectiveFrom": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "sunsetAt": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "changeNoticeDays": {
+          "type": "integer"
+        },
+        "backwardCompatible": {
+          "type": "boolean"
+        }
+      }
+    },
+    "Organisation": {
+      "type": "object",
+      "required": [
+        "id",
+        "name"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "name": {
+          "type": "string"
+        },
+        "contact": {
+          "type": "string"
+        },
+        "endpoint": {
+          "type": "string",
+          "format": "uri"
+        }
+      }
+    },
+    "Signature": {
+      "type": "object",
+      "required": [
+        "organisationId",
+        "signedBy",
+        "signedAt"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "organisationId": {
+          "type": "string"
+        },
+        "signedBy": {
+          "type": "string"
+        },
+        "signedAt": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "publicKeyRef": {
+          "type": "string"
+        },
+        "signature": {
+          "type": "string"
+        }
+      }
+    },
+    "ExpressionValue": {
+      "description": "A value used in rule conditions and actions. Can be a literal value, a field reference (using '$fieldId' syntax), or an arithmetic expression combining a source field with an operator and a literal. This allows rules to express cross-field computation: 'set discount to total * 0.1'.",
+      "oneOf": [
+        {
+          "$ref": "#/$defs/LiteralValue",
+          "description": "A concrete literal: string, number, boolean, null, or array of literals."
+        },
+        {
+          "$ref": "#/$defs/FieldReference",
+          "description": "A reference to another field on the same entity."
+        },
+        {
+          "$ref": "#/$defs/ArithmeticExpression",
+          "description": "An arithmetic expression: sourceField op literal."
+        },
+        {
+          "$ref": "#/$defs/TemporalReference",
+          "description": "A temporal value resolved at evaluation time: now, today, or date arithmetic."
+        }
+      ]
+    },
+    "LiteralValue": {
+      "description": "A concrete literal value.",
+      "oneOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "number"
+        },
+        {
+          "type": "boolean"
+        },
+        {
+          "type": "null"
+        },
+        {
+          "type": "array",
+          "items": {
+            "oneOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "number"
+              },
+              {
+                "type": "boolean"
+              }
+            ]
+          }
+        }
+      ]
+    },
+    "FieldReference": {
+      "type": "object",
+      "description": "A reference to another field on the same entity. Used in actions and conditions to read a value from the entity rather than using a literal.",
+      "required": [
+        "$field"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "$field": {
+          "type": "string",
+          "description": "Field id on the rule's entityRef. e.g. {\"$field\": \"total\"} reads the current total."
+        }
+      }
+    },
+    "ArithmeticExpression": {
+      "type": "object",
+      "description": "Single-operator arithmetic expression: result = sourceField op literal. Enables computed assignments like 'set discount = total * 0.1'. KNOWN LIMITATION: expressions do not compose. (total - discount) * taxRate cannot be expressed as a single ArithmeticExpression. Complex multi-step calculations should be decomposed into chained rule actions or handled in operation-layer code. This is a deliberate simplicity trade-off.",
+      "required": [
+        "$field",
+        "$op",
+        "$value"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "$field": {
+          "type": "string",
+          "description": "Field id providing the input value. e.g. 'total'"
+        },
+        "$op": {
+          "type": "string",
+          "enum": [
+            "multiply",
+            "divide",
+            "add",
+            "subtract",
+            "modulo"
+          ],
+          "description": "Arithmetic operator applied to the source field."
+        },
+        "$value": {
+          "type": "number",
+          "description": "Literal numeric operand. e.g. 0.1 for 10%, 100 for a flat addition."
+        }
+      }
+    },
+    "TemporalReference": {
+      "description": "A temporal value resolved at evaluation time. Supports current timestamp, start of day, and date arithmetic relative to a field.",
+      "oneOf": [
+        {
+          "type": "object",
+          "description": "A well-known temporal instant: now (current timestamp) or today (start of current day).",
+          "required": [
+            "$temporal"
+          ],
+          "additionalProperties": false,
+          "properties": {
+            "$temporal": {
+              "type": "string",
+              "enum": [
+                "now",
+                "today"
+              ],
+              "description": "The temporal instant to resolve. now = current timestamp, today = start of current UTC day."
+            }
+          }
+        },
+        {
+          "type": "object",
+          "description": "Date arithmetic: base field plus/minus an offset. e.g. trialEndsAt + 30 days.",
+          "required": [
+            "$dateAdd"
+          ],
+          "additionalProperties": false,
+          "properties": {
+            "$dateAdd": {
+              "type": "object",
+              "required": [
+                "$field",
+                "offset",
+                "unit"
+              ],
+              "additionalProperties": false,
+              "properties": {
+                "$field": {
+                  "type": "string",
+                  "description": "Field id providing the base datetime value."
+                },
+                "offset": {
+                  "type": "integer",
+                  "description": "Number of units to add. Use negative values for subtraction."
+                },
+                "unit": {
+                  "type": "string",
+                  "enum": [
+                    "minutes",
+                    "hours",
+                    "days",
+                    "months"
+                  ],
+                  "description": "Time unit for the offset."
+                }
+              }
+            }
+          }
+        }
+      ]
+    }
+  }
+}

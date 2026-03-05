@@ -1,0 +1,1145 @@
+# yaml-language-server: $schema=files/canonical-model.schema.json
+# ─────────────────────────────────────────────────────────────────────────────
+# CANONICAL MODEL — example
+# Schema version: v1.2.0
+# Meta version:   1.0.0  (schema version ≠ model version)
+# Domain: order management
+#
+# Exercises: ExpressionValue cross-field computation, uuid+refEntity FK pattern,
+#   many-to-one relations, compound conditions (and/not), lifecycle transitions
+#   that reference real rule/operation ids, Order.relations, glossaryRef on all
+#   domain fields, events required, happy+failure scenarios for all intents,
+#   add-order-item operation, inputMode/outputMode required.
+# ─────────────────────────────────────────────────────────────────────────────
+
+meta:
+  id: "550e8400-e29b-41d4-a716-446655440000"
+  version: "1.0.0"
+  status: approved
+  createdAt: "2026-03-04T09:00:00Z"
+  approvedBy: "jane.smith"
+  approvedAt: "2026-03-04T10:00:00Z"
+  description: "Order management domain — orders, customers, products, discount rules."
+  domain: "order-management"
+  owners: ["jane.smith", "tom.baker"]
+  prevHash: null
+  changeReason: null
+
+# ─────────────────────────────────────────────────────────────────────────────
+# GLOSSARY — #8 fix: glossaryRef added for every domain field
+# ─────────────────────────────────────────────────────────────────────────────
+
+glossary:
+
+  - id: order
+    term: Order
+    definition: >
+      A confirmed intention by a customer to purchase one or more products.
+      A cart that has not been submitted is not an Order.
+    examples:
+      - "Customer submits checkout — an Order is created"
+    counterexamples:
+      - "A saved cart is not an Order"
+    precision:
+      type: enum
+      values: [pending, confirmed, processing, shipped, delivered, cancelled, refunded]
+    conceptVersion: "1.0"
+
+  - id: order-total
+    term: Order Total
+    definition: Sum of line item prices before discounts. Excludes shipping and taxes.
+    precision:
+      type: range
+      min: 0
+      max: 999999.99
+      unit: AUD
+    conceptVersion: "1.0"
+
+  - id: discount
+    term: Discount
+    definition: Reduction applied to Order Total. Always an absolute AUD amount.
+    counterexamples:
+      - "A promo code is not a discount until validated and applied"
+    precision:
+      type: range
+      min: 0
+      max: 999999.99
+      unit: AUD
+    conceptVersion: "1.0"
+
+  - id: high-value-order
+    term: High Value Order
+    definition: >
+      An order whose total meets or exceeds AUD 1,000. Threshold is a
+      GlossaryTerm so any change triggers review of all referencing rules.
+    precision:
+      type: range
+      min: 1000
+      max: 999999.99
+      unit: AUD
+    conceptVersion: "1.0"
+    notes: If threshold changes, increment conceptVersion and review all rules with glossaryRef high-value-order.
+
+  - id: discount-rate
+    term: Discount Rate
+    definition: >
+      The percentage of Order Total applied as a discount for qualifying orders.
+      Expressed as a decimal multiplier (0.1 = 10%). A named GlossaryTerm so
+      that any change to the rate is tracked and all referencing rules are flagged.
+    precision:
+      type: range
+      min: 0
+      max: 1
+      unit: decimal multiplier
+    conceptVersion: "1.0"
+    notes: >
+      Current value: 0.1 (10%). If rate changes, increment conceptVersion.
+      All rules with glossaryRef discount-rate will be flagged for review.
+
+  - id: customer
+    term: Customer
+    definition: A registered user who has placed at least one order.
+    conceptVersion: "1.0"
+
+  - id: customer-email
+    term: Customer Email
+    definition: The verified email address used to identify a customer account. Unique per customer.
+    precision:
+      type: pattern
+      pattern: "^[^@]+@[^@]+\\.[^@]+$"
+    conceptVersion: "1.0"
+
+  - id: product
+    term: Product
+    definition: A purchasable item with a price and stock level.
+    conceptVersion: "1.0"
+
+  - id: product-name
+    term: Product Name
+    definition: The human-readable display name of a product as shown in the catalogue and on orders.
+    conceptVersion: "1.0"
+
+  - id: product-price
+    term: Product Price
+    definition: The current retail price of a product in AUD. Subject to change; order items record the price at time of purchase.
+    precision:
+      type: range
+      min: 0
+      max: 999999.99
+      unit: AUD
+    conceptVersion: "1.0"
+
+  - id: stock-level
+    term: Stock Level
+    definition: >
+      The number of units of a product currently available for purchase.
+      Zero means out of stock. Negative values are not permitted.
+    precision:
+      type: range
+      min: 0
+      max: 999999
+      unit: units
+    conceptVersion: "1.0"
+
+  - id: order-item
+    term: Order Item
+    definition: A single product line within an order, recording quantity and unit price at time of purchase.
+    conceptVersion: "1.0"
+
+  - id: order-item-quantity
+    term: Order Item Quantity
+    definition: The number of units of a product in a single order item. Must be at least 1.
+    precision:
+      type: range
+      min: 1
+      max: 9999
+      unit: units
+    conceptVersion: "1.0"
+
+  - id: unit-price
+    term: Unit Price
+    definition: >
+      The price per unit of a product at the time an order item was created.
+      Immutable — never recalculated after creation, even if the product price changes.
+    precision:
+      type: range
+      min: 0
+      max: 999999.99
+      unit: AUD
+    conceptVersion: "1.0"
+
+  - id: sku
+    term: SKU
+    definition: Stock Keeping Unit. Unique identifier for a product variant.
+    precision:
+      type: pattern
+      pattern: "^[A-Z]{2,4}-[0-9]{4,8}$"
+    conceptVersion: "1.0"
+
+# ─────────────────────────────────────────────────────────────────────────────
+# INTENTS
+# ─────────────────────────────────────────────────────────────────────────────
+
+intents:
+
+  - id: reward-high-value-orders
+    name: Reward High Value Orders
+    description: >
+      Apply a 10% discount to orders meeting or exceeding the high-value threshold,
+      unless a discount has already been applied.
+    status: approved
+    approvedBy: jane.smith
+    approvedAt: "2026-03-04T10:00:00Z"
+    version: "1.0"
+    priority: must
+    rationale: Customers who receive a reward on their first high-value order show 40% higher repeat purchase rate.
+    glossaryRefs: [high-value-order, discount, discount-rate, order]
+    tags: [pricing, customer-retention]
+
+  - id: confirm-order-on-payment
+    name: Confirm Order on Successful Payment
+    description: >
+      When payment is successfully processed for a pending order, update
+      status to confirmed and emit the order.confirmed event.
+    status: approved
+    approvedBy: jane.smith
+    approvedAt: "2026-03-04T10:00:00Z"
+    version: "1.0"
+    priority: must
+    glossaryRefs: [order]
+    tags: [payments, order-lifecycle]
+
+  - id: prevent-oversell
+    name: Prevent Oversell
+    description: >
+      When an order item is added, the requested quantity must not exceed
+      available stock. Reject with INSUFFICIENT_STOCK if stock is insufficient.
+    status: approved
+    approvedBy: jane.smith
+    approvedAt: "2026-03-04T10:00:00Z"
+    version: "1.0"
+    priority: must
+    glossaryRefs: [order-item, stock-level, order-item-quantity]
+    tags: [inventory]
+
+# ─────────────────────────────────────────────────────────────────────────────
+# SCENARIOS — #10 fix: happy path added for prevent-oversell
+# ─────────────────────────────────────────────────────────────────────────────
+
+scenarios:
+
+  # ── reward-high-value-orders ──
+
+  - id: high-value-discount-applied
+    intentRef: reward-high-value-orders
+    name: Discount applied to high value order
+    given: a confirmed order with total AUD 1,200 and discount of 0
+    when: the discount rule is applied
+    then: the order discount is AUD 120
+    coverageType: happy
+    expectedResult: true
+    entityRefs: [order]
+    fieldRefs:
+      - { entityId: order, fieldId: total, value: 1200 }
+      - { entityId: order, fieldId: discount, value: 0 }
+    ruleRefs: [apply-high-value-discount]
+    outputFieldRefs:
+      - { entityId: order, fieldId: discount, value: 120 }
+    priority: must-pass
+
+  - id: already-discounted-not-re-discounted
+    intentRef: reward-high-value-orders
+    name: Already discounted order not re-discounted
+    given: a confirmed order with total AUD 1,200 and existing discount AUD 50
+    when: the discount rule is applied
+    then: the order discount remains AUD 50
+    coverageType: edge
+    expectedResult: false
+    entityRefs: [order]
+    fieldRefs:
+      - { entityId: order, fieldId: discount, value: 50 }
+    ruleRefs: [apply-high-value-discount]
+    priority: must-pass
+    notes: Exercises the NOT(discount > 0) branch of the compound condition.
+
+  - id: no-discount-below-threshold
+    intentRef: reward-high-value-orders
+    name: No discount applied below threshold
+    given: a confirmed order with total AUD 999 and discount of 0
+    when: the discount rule is applied
+    then: the order discount remains 0
+    coverageType: edge
+    expectedResult: false
+    entityRefs: [order]
+    fieldRefs:
+      - { entityId: order, fieldId: total, value: 999 }
+      - { entityId: order, fieldId: discount, value: 0 }
+    ruleRefs: [apply-high-value-discount]
+    priority: must-pass
+
+  # ── confirm-order-on-payment ──
+
+  - id: order-confirmed-on-payment
+    intentRef: confirm-order-on-payment
+    name: Order confirmed after successful payment
+    given: a pending order ORD-001
+    when: payment is successfully processed for ORD-001
+    then: order status is confirmed and order.confirmed event is emitted
+    coverageType: happy
+    expectedResult: true
+    entityRefs: [order]
+    fieldRefs:
+      - { entityId: order, fieldId: status, value: pending }
+    ruleRefs: [confirm-order-on-payment]
+    outputFieldRefs:
+      - { entityId: order, fieldId: status, value: confirmed }
+    priority: must-pass
+
+  - id: order-not-confirmed-on-failed-payment
+    intentRef: confirm-order-on-payment
+    name: Order remains pending when payment fails
+    given: a pending order ORD-002
+    when: payment fails for ORD-002
+    then: order status remains pending and no event is emitted
+    coverageType: failure
+    expectedResult: false
+    entityRefs: [order]
+    priority: must-pass
+
+  # ── prevent-oversell ──
+
+  - id: order-item-added-when-stock-sufficient       # #10 fix: happy path
+    intentRef: prevent-oversell
+    name: Order item added when stock is sufficient
+    given: a product with 10 units in stock
+    when: an order item is added requesting 3 units
+    then: the order item is created and stock level is decremented to 7
+    coverageType: happy
+    expectedResult: true
+    entityRefs: [order-item, product]
+    fieldRefs:
+      - { entityId: product, fieldId: stock-level, value: 10 }
+      - { entityId: order-item, fieldId: quantity, value: 3 }
+    priority: must-pass
+
+  - id: order-item-rejected-when-out-of-stock
+    intentRef: prevent-oversell
+    name: Order item rejected when stock insufficient
+    given: a product with 2 units in stock
+    when: an order item is added requesting 5 units
+    then: the operation returns INSUFFICIENT_STOCK error and no item is created
+    coverageType: failure
+    expectedResult: true
+    entityRefs: [order-item, product]
+    fieldRefs:
+      - { entityId: product, fieldId: stock-level, value: 2 }
+      - { entityId: order-item, fieldId: quantity, value: 5 }
+    priority: must-pass
+
+  # ── lifecycle operation scenarios (#8 fix) ──
+
+  - id: pending-order-cancelled
+    intentRef: confirm-order-on-payment
+    name: Pending order can be cancelled
+    given: a pending order ORD-003
+    when: cancel-order is called for ORD-003
+    then: order status is cancelled
+    coverageType: happy
+    expectedResult: true
+    entityRefs: [order]
+    priority: must-pass
+
+  - id: confirmed-order-cannot-be-cancelled
+    intentRef: confirm-order-on-payment
+    name: Confirmed order cannot be cancelled
+    given: a confirmed order ORD-004
+    when: cancel-order is called for ORD-004
+    then: the operation returns ORDER_NOT_CANCELLABLE error
+    coverageType: failure
+    expectedResult: false
+    entityRefs: [order]
+    priority: must-pass
+
+  - id: confirmed-order-moves-to-processing
+    intentRef: confirm-order-on-payment
+    name: Confirmed order transitions to processing
+    given: a confirmed order ORD-005
+    when: start-processing-order is called for ORD-005
+    then: order status is processing
+    coverageType: happy
+    expectedResult: true
+    entityRefs: [order]
+    priority: must-pass
+
+  - id: confirmed-order-refunded
+    intentRef: confirm-order-on-payment
+    name: Confirmed order can be refunded
+    given: a confirmed order ORD-006
+    when: refund-order is called for ORD-006
+    then: order status is refunded
+    coverageType: happy
+    expectedResult: true
+    entityRefs: [order]
+    priority: must-pass
+
+  - id: delivered-order-refunded
+    intentRef: confirm-order-on-payment
+    name: Delivered order can be refunded
+    given: a delivered order ORD-007
+    when: refund-order is called for ORD-007
+    then: order status is refunded
+    coverageType: happy
+    expectedResult: true
+    entityRefs: [order]
+    priority: must-pass
+
+  - id: processing-order-marked-shipped
+    intentRef: confirm-order-on-payment
+    name: Processing order marked as shipped
+    given: a processing order ORD-008
+    when: mark-order-shipped is called for ORD-008
+    then: order status is shipped
+    coverageType: happy
+    expectedResult: true
+    entityRefs: [order]
+    priority: must-pass
+
+  - id: shipped-order-marked-delivered
+    intentRef: confirm-order-on-payment
+    name: Shipped order marked as delivered
+    given: a shipped order ORD-009
+    when: mark-order-delivered is called for ORD-009
+    then: order status is delivered
+    coverageType: happy
+    expectedResult: true
+    entityRefs: [order]
+    priority: must-pass
+
+# ─────────────────────────────────────────────────────────────────────────────
+# SCENARIO COVERAGE — #10 fix: prevent-oversell now has happyPathRequired true
+# ─────────────────────────────────────────────────────────────────────────────
+
+scenarioCoverage:
+
+  - intentRef: reward-high-value-orders
+    deployGate: 100
+    happyPathRequired: true
+    edgeCaseMinimum: 2
+    failurePathMinimum: 0
+
+  - intentRef: confirm-order-on-payment
+    deployGate: 100
+    happyPathRequired: true
+    edgeCaseMinimum: 0
+    failurePathMinimum: 1
+
+  - intentRef: prevent-oversell
+    deployGate: 100
+    happyPathRequired: true          # now satisfied by order-item-added-when-stock-sufficient
+    edgeCaseMinimum: 0
+    failurePathMinimum: 1
+
+# ─────────────────────────────────────────────────────────────────────────────
+# DOMAIN EVENT REGISTRY — top-level required in v1.2.0
+# ─────────────────────────────────────────────────────────────────────────────
+
+events:
+
+  - id: order.confirmed
+    name: Order Confirmed
+    description: Emitted when an order transitions from pending to confirmed.
+    entityRef: order
+    payloadFields: [id, status, total, discount, customer-id]
+    subscribers: [payments-service, notifications-service]
+    intentRef: confirm-order-on-payment
+    version: "1.0"
+
+  - id: order.discount-applied
+    name: Order Discount Applied
+    description: Emitted when a discount rule is applied to an order.
+    entityRef: order
+    payloadFields: [id, total, discount]
+    subscribers: [analytics-service]
+    intentRef: reward-high-value-orders
+    version: "1.0"
+
+  - id: order.item-added
+    name: Order Item Added
+    description: Emitted when an item is successfully added to an order.
+    entityRef: order-item
+    payloadFields: [id, order-id, product-id, quantity, unit-price]
+    subscribers: [inventory-service]
+    intentRef: prevent-oversell
+    version: "1.0"
+
+# ─────────────────────────────────────────────────────────────────────────────
+# ENTITIES
+# ─────────────────────────────────────────────────────────────────────────────
+
+entities:
+
+  - id: order
+    name: Order
+    glossaryRef: order
+    version: "1.0"
+    softDelete: true
+    # #6 fix: lifecycle transitions reference real rule/operation ids only
+    lifecycle:
+      statusField: status
+      initialState: pending
+      terminalStates: [cancelled, refunded]
+      transitions:
+        - from: pending
+          to: confirmed
+          trigger: confirm-order-on-payment    # real rule id
+          guard: payment has been successfully processed
+          emits: order.confirmed
+          description: Payment service calls confirm-order operation
+        - from: pending
+          to: cancelled
+          trigger: cancel-order               # real operation id declared below
+          description: Customer or admin cancels before payment
+        - from: confirmed
+          to: processing
+          trigger: start-processing-order     # real operation id declared below
+        - from: confirmed
+          to: refunded
+          trigger: refund-order              # real operation id declared below
+        - from: processing
+          to: shipped
+          trigger: mark-order-shipped        # real operation id declared below
+        - from: shipped
+          to: delivered
+          trigger: mark-order-delivered      # real operation id declared below
+        - from: shipped
+          to: refunded
+          trigger: refund-order
+          description: Refund initiated after dispatch but before delivery
+        - from: delivered
+          to: refunded
+          trigger: refund-order
+          description: Refund after delivery — most common real-world refund path
+    fields:
+      - id: id
+        name: id
+        type: uuid
+        required: true
+        immutable: true
+        systemField: true
+      - id: customer-id
+        name: customerId
+        type: uuid              # #3 fix: uuid + refEntity pattern (not type: reference)
+        glossaryRef: customer
+        required: true
+        immutable: true
+        refEntity: customer     # generator creates FK constraint from uuid+refEntity
+      - id: status
+        name: status
+        type: enum
+        glossaryRef: order
+        enumValues: [pending, confirmed, processing, shipped, delivered, cancelled, refunded]
+        required: true
+        defaultValue: "pending"
+      - id: total
+        name: total
+        type: decimal
+        glossaryRef: order-total
+        required: true
+        validation: { min: 0, max: 999999.99, precision: 2 }
+      - id: discount
+        name: discount
+        type: decimal
+        glossaryRef: discount
+        required: true
+        defaultValue: 0
+        validation: { min: 0, max: 999999.99, precision: 2 }
+      - id: shipping-address
+        name: shippingAddress
+        type: object
+        objectSchema:
+          additionalProperties: false
+          fields:
+            - { id: line1, name: line1, type: string, required: true, validation: { maxLength: 255 } }
+            - { id: line2, name: line2, type: string, nullable: true }
+            - { id: city, name: city, type: string, required: true }
+            - { id: postcode, name: postcode, type: string, required: true, validation: { pattern: "^[0-9]{4}$" } }
+            - { id: country, name: country, type: string, required: true, defaultValue: "AU" }
+      - id: tags
+        name: tags
+        type: array
+        itemType: string
+        defaultValue: []
+      - id: created-at
+        name: createdAt
+        type: datetime
+        required: true
+        immutable: true
+        systemField: true
+      - id: updated-at
+        name: updatedAt
+        type: datetime
+        required: true
+        systemField: true
+    # #7 fix: Order declares its relation to OrderItem
+    relations:
+      - id: order-to-items
+        type: one-to-many
+        targetEntity: order-item
+        fromField: id
+        toField: order-id
+        cascade: delete
+        description: An order has many order items. Deleting an order deletes its items.
+    indexes:
+      - { fields: [customer-id] }
+      - { fields: [status] }
+      - { fields: [created-at] }
+
+  - id: customer
+    name: Customer
+    glossaryRef: customer
+    version: "1.0"
+    fields:
+      - id: id
+        name: id
+        type: uuid
+        required: true
+        immutable: true
+        systemField: true
+      - id: email
+        name: email
+        type: string
+        glossaryRef: customer-email     # #8 fix: glossaryRef added
+        required: true
+        unique: true
+        validation: { pattern: "^[^@]+@[^@]+\\.[^@]+$", maxLength: 255 }
+      - id: created-at
+        name: createdAt
+        type: datetime
+        required: true
+        immutable: true
+        systemField: true
+    indexes:
+      - { fields: [email], unique: true }
+
+  - id: product
+    name: Product
+    glossaryRef: product
+    version: "1.0"
+    fields:
+      - id: id
+        name: id
+        type: uuid
+        required: true
+        immutable: true
+        systemField: true
+      - id: sku
+        name: sku
+        type: string
+        glossaryRef: sku
+        required: true
+        unique: true
+        immutable: true
+        validation: { pattern: "^[A-Z]{2,4}-[0-9]{4,8}$" }
+      - id: name
+        name: name
+        type: string
+        glossaryRef: product-name       # #8 fix
+        required: true
+        validation: { maxLength: 255 }
+      - id: price
+        name: price
+        type: decimal
+        glossaryRef: product-price      # #8 fix
+        required: true
+        validation: { min: 0, precision: 2 }
+      - id: stock-level
+        name: stockLevel
+        type: integer
+        glossaryRef: stock-level        # #8 fix
+        required: true
+        defaultValue: 0
+        validation: { min: 0 }
+      - id: created-at
+        name: createdAt
+        type: datetime
+        required: true
+        immutable: true
+        systemField: true
+    indexes:
+      - { fields: [sku], unique: true }
+
+  - id: order-item
+    name: OrderItem
+    glossaryRef: order-item
+    description: Join entity between Order and Product. Carries quantity and unit price at time of purchase.
+    version: "1.0"
+    fields:
+      - id: id
+        name: id
+        type: uuid
+        required: true
+        immutable: true
+        systemField: true
+      - id: order-id
+        name: orderId
+        type: uuid                 # #3 fix: uuid + refEntity (not type: reference)
+        glossaryRef: order
+        required: true
+        immutable: true
+        refEntity: order
+      - id: product-id
+        name: productId
+        type: uuid
+        glossaryRef: product
+        required: true
+        immutable: true
+        refEntity: product
+      - id: quantity
+        name: quantity
+        type: integer
+        glossaryRef: order-item-quantity   # #8 fix
+        required: true
+        validation: { min: 1, max: 9999 }
+      - id: unit-price
+        name: unitPrice
+        type: decimal
+        glossaryRef: unit-price            # #8 fix
+        required: true
+        immutable: true
+        description: Price at time of purchase. Never recalculated.
+        validation: { min: 0, precision: 2 }
+    relations:
+      - id: order-item-to-order
+        type: many-to-one            # many items belong to one order
+        targetEntity: order
+        fromField: order-id
+        toField: id
+        # cascade omitted: cascade belongs on the owning "one" side (Order.order-to-items).
+        # Convention: only the parent entity (Order) declares cascade: delete.
+        # The child entity (OrderItem) never redeclares cascade — avoids bidirectional conflict.
+      - id: order-item-to-product
+        type: many-to-one            # many items reference one product
+        targetEntity: product
+        fromField: product-id
+        toField: id
+    indexes:
+      - { fields: [order-id] }
+      - { fields: [product-id] }
+      - { fields: [order-id, product-id], unique: true }
+
+# ─────────────────────────────────────────────────────────────────────────────
+# RULES — #1/#2 fix: discount rule now uses ArithmeticExpression correctly
+# ─────────────────────────────────────────────────────────────────────────────
+
+rules:
+
+  - id: apply-high-value-discount
+    name: applyHighValueDiscount
+    description: >
+      Set discount = total * 0.1 for orders meeting the threshold, if not already discounted.
+      Uses ArithmeticExpression to read total and compute 10%. Previously broken (multiplied
+      discount field by 0.1, which was always 0). Now correctly reads total as source field.
+    intentRef: reward-high-value-orders
+    entityRef: order
+    scenarioRefs:
+      - high-value-discount-applied
+      - already-discounted-not-re-discounted
+      - no-discount-below-threshold
+    condition:
+      and:
+        - field: total
+          operator: gte
+          value: 1000
+        - not:
+            field: discount
+            operator: gt
+            value: 0
+    action:
+      type: set
+      field: discount
+      value:                     # ArithmeticExpression: discount = total * discount-rate
+        $field: total            # source: order total
+        $op: multiply
+        $value: 0.1              # discount-rate (glossaryRef: discount-rate, conceptVersion 1.0)
+                                 # Not a magic number — rate is defined in GlossaryTerm discount-rate.
+                                 # If rate changes: update GlossaryTerm, increment conceptVersion,
+                                 # update this value, pipeline flags all affected rules for re-approval.
+      then:
+        - type: emit-event
+          event: order.discount-applied
+    priority: 10
+    enabled: true
+    tags: [pricing, discount]
+
+  - id: confirm-order-on-payment
+    name: confirmOrderOnPayment
+    intentRef: confirm-order-on-payment
+    entityRef: order
+    scenarioRefs:
+      - order-confirmed-on-payment
+      - order-not-confirmed-on-failed-payment
+    condition:
+      field: status
+      operator: eq
+      value: "pending"
+    action:
+      type: set
+      field: status
+      value: "confirmed"
+      then:
+        - type: emit-event
+          event: order.confirmed
+    priority: 20
+    enabled: true
+
+  - id: check-stock-on-add-item
+    name: checkStockOnAddItem
+    description: >
+      Validates that the requested quantity is at least 1 before delegating
+      to the add-order-item operation. Cross-entity stock validation
+      (Product.stockLevel vs OrderItem.quantity) is the responsibility of
+      the add-order-item operation layer, not this rule. This is a declared
+      architectural boundary — see known limitations in canonical model schema.
+    intentRef: prevent-oversell
+    entityRef: order-item
+    scenarioRefs:
+      - order-item-added-when-stock-sufficient
+      - order-item-rejected-when-out-of-stock
+    condition:
+      field: quantity
+      operator: gte
+      value: 1
+    action:
+      type: call-operation
+      operation: add-order-item
+    priority: 5
+    enabled: true
+    tags: [inventory]
+
+# ─────────────────────────────────────────────────────────────────────────────
+# OPERATIONS — #5 fix: inputMode and outputMode now required on all operations
+#              #6 fix: lifecycle trigger ids match real operation ids here
+#              #11 fix: add-order-item operation added
+# ─────────────────────────────────────────────────────────────────────────────
+
+operations:
+
+  - id: apply-discount-to-order
+    name: applyDiscountToOrder
+    method: POST
+    path: /orders/{orderId}/discount
+    pathParams:
+      - { name: orderId, type: uuid, entityRef: order, fieldRef: id }
+    inputMode: none
+    outputMode: single
+    outputEntity: order
+    intentRef: reward-high-value-orders
+    ruleRefs: [apply-high-value-discount]
+    scenarioRefs: [high-value-discount-applied, no-discount-below-threshold]
+    errorResponses:
+      - { statusCode: 404, code: ORDER_NOT_FOUND }
+      - { statusCode: 409, code: ORDER_NOT_DISCOUNTABLE, description: Order is not in a discountable state. }
+    auth: { required: true, schemes: [bearer], roles: [customer, admin] }
+
+  - id: confirm-order
+    name: confirmOrder
+    method: POST
+    path: /orders/{orderId}/confirm
+    pathParams:
+      - { name: orderId, type: uuid, entityRef: order, fieldRef: id }
+    inputMode: none
+    outputMode: single
+    outputEntity: order
+    intentRef: confirm-order-on-payment
+    ruleRefs: [confirm-order-on-payment]
+    scenarioRefs: [order-confirmed-on-payment, order-not-confirmed-on-failed-payment]
+    errorResponses:
+      - { statusCode: 404, code: ORDER_NOT_FOUND }
+      - { statusCode: 409, code: ORDER_ALREADY_CONFIRMED }
+      - { statusCode: 422, code: INVALID_LIFECYCLE_TRANSITION, description: Transition not permitted by order lifecycle. }
+    auth: { required: true, schemes: [bearer], roles: [payments-service, admin] }
+    operationContract:
+      steps:
+        - id: validate-lifecycle
+          type: apply-rule
+          ruleRef: confirm-order-on-payment
+          onFailure:
+            throw: INVALID_LIFECYCLE_TRANSITION
+        - id: emit-confirmation
+          type: emit-event
+          eventRef: order.confirmed
+          onFailure:
+            log: warn
+            continue: true
+
+  - id: add-order-item                         # #11 fix: operation for prevent-oversell
+    name: addOrderItem
+    description: Adds a product to an order. Validates stock before creating the item.
+    method: POST
+    path: /orders/{orderId}/items
+    pathParams:
+      - { name: orderId, type: uuid, entityRef: order, fieldRef: id }
+    inputMode: body
+    inputEntity: order-item
+    outputMode: single
+    outputEntity: order-item
+    intentRef: prevent-oversell
+    ruleRefs: [check-stock-on-add-item]
+    scenarioRefs:
+      - order-item-added-when-stock-sufficient
+      - order-item-rejected-when-out-of-stock
+    errorResponses:
+      - { statusCode: 404, code: ORDER_NOT_FOUND }
+      - { statusCode: 404, code: PRODUCT_NOT_FOUND }
+      - { statusCode: 409, code: INSUFFICIENT_STOCK, description: Requested quantity exceeds available stock. }
+      - { statusCode: 409, code: ORDER_NOT_EDITABLE, description: Items can only be added to pending orders. }
+      - { statusCode: 422, code: INVALID_QUANTITY, description: Order item quantity must be at least 1. }
+    auth: { required: true, schemes: [bearer], roles: [customer, admin] }
+    operationContract:
+      steps:
+        - id: validate-quantity
+          type: apply-rule
+          ruleRef: check-stock-on-add-item
+          onFailure:
+            throw: INVALID_QUANTITY
+        - id: persist-item
+          type: db-write
+          onFailure:
+            throw: ORDER_NOT_EDITABLE
+        - id: emit-item-added
+          type: emit-event
+          eventRef: order.item-added
+          onFailure:
+            log: warn
+            continue: true
+
+  - id: list-orders
+    name: listOrders
+    method: GET
+    path: /customers/{customerId}/orders
+    pathParams:
+      - { name: customerId, type: uuid, entityRef: customer, fieldRef: id }
+    inputMode: query
+    inputEntity: order
+    outputMode: collection
+    outputEntity: order
+    pagination:
+      strategy: cursor
+      defaultSize: 20
+      maxSize: 100
+      sortableFields: [created-at, total, status]
+      filterableFields: [status, created-at]
+    errorResponses:
+      - { statusCode: 404, code: CUSTOMER_NOT_FOUND }
+    auth: { required: true, schemes: [bearer], roles: [customer, admin] }
+    rateLimit: { requests: 100, window: 1m, scope: user }
+
+  # #6 fix: these operation ids match the lifecycle transition triggers above
+  - id: cancel-order
+    name: cancelOrder
+    method: POST
+    path: /orders/{orderId}/cancel
+    pathParams:
+      - { name: orderId, type: uuid, entityRef: order, fieldRef: id }
+    inputMode: none
+    outputMode: single
+    outputEntity: order
+    intentRef: confirm-order-on-payment
+    scenarioRefs: [pending-order-cancelled, confirmed-order-cannot-be-cancelled]
+    errorResponses:
+      - { statusCode: 404, code: ORDER_NOT_FOUND }
+      - { statusCode: 409, code: ORDER_NOT_CANCELLABLE }
+    auth: { required: true, schemes: [bearer], roles: [customer, admin] }
+
+  - id: start-processing-order
+    name: startProcessingOrder
+    method: POST
+    path: /orders/{orderId}/process
+    pathParams:
+      - { name: orderId, type: uuid, entityRef: order, fieldRef: id }
+    inputMode: none
+    outputMode: single
+    outputEntity: order
+    intentRef: confirm-order-on-payment
+    scenarioRefs: [confirmed-order-moves-to-processing]
+    errorResponses:
+      - { statusCode: 404, code: ORDER_NOT_FOUND }
+      - { statusCode: 409, code: INVALID_LIFECYCLE_TRANSITION }
+    auth: { required: true, schemes: [bearer], roles: [admin, fulfilment-service] }
+
+  - id: refund-order
+    name: refundOrder
+    method: POST
+    path: /orders/{orderId}/refund
+    pathParams:
+      - { name: orderId, type: uuid, entityRef: order, fieldRef: id }
+    inputMode: none
+    outputMode: single
+    outputEntity: order
+    intentRef: confirm-order-on-payment
+    scenarioRefs: [confirmed-order-refunded, delivered-order-refunded]
+    errorResponses:
+      - { statusCode: 404, code: ORDER_NOT_FOUND }
+      - { statusCode: 409, code: INVALID_LIFECYCLE_TRANSITION }
+    auth: { required: true, schemes: [bearer], roles: [admin, payments-service] }
+
+  - id: mark-order-shipped
+    name: markOrderShipped
+    method: POST
+    path: /orders/{orderId}/ship
+    pathParams:
+      - { name: orderId, type: uuid, entityRef: order, fieldRef: id }
+    inputMode: none
+    outputMode: single
+    outputEntity: order
+    intentRef: confirm-order-on-payment
+    scenarioRefs: [processing-order-marked-shipped]
+    errorResponses:
+      - { statusCode: 404, code: ORDER_NOT_FOUND }
+      - { statusCode: 409, code: INVALID_LIFECYCLE_TRANSITION }
+    auth: { required: true, schemes: [bearer], roles: [admin, fulfilment-service] }
+
+  - id: mark-order-delivered
+    name: markOrderDelivered
+    method: POST
+    path: /orders/{orderId}/deliver
+    pathParams:
+      - { name: orderId, type: uuid, entityRef: order, fieldRef: id }
+    inputMode: none
+    outputMode: single
+    outputEntity: order
+    intentRef: confirm-order-on-payment
+    scenarioRefs: [shipped-order-marked-delivered]
+    errorResponses:
+      - { statusCode: 404, code: ORDER_NOT_FOUND }
+      - { statusCode: 409, code: INVALID_LIFECYCLE_TRANSITION }
+    auth: { required: true, schemes: [bearer], roles: [admin, fulfilment-service] }
+
+  - id: delete-order
+    name: deleteOrder
+    method: DELETE
+    path: /orders/{orderId}
+    pathParams:
+      - { name: orderId, type: uuid, entityRef: order, fieldRef: id }
+    inputMode: none
+    outputMode: none
+    errorResponses:
+      - { statusCode: 404, code: ORDER_NOT_FOUND }
+      - { statusCode: 409, code: ORDER_NOT_DELETABLE, description: Only cancelled orders may be deleted. }
+    auth: { required: true, schemes: [bearer], roles: [admin] }
+
+# ─────────────────────────────────────────────────────────────────────────────
+# UI CONTRACTS
+# ─────────────────────────────────────────────────────────────────────────────
+
+uiContracts:
+
+  - id: order-summary-view
+    name: Order Summary
+    entityRef: order
+    # intentRef omitted — this view is cross-cutting, serving all order intents.
+    # UIContract.intentRef is optional in v1.3.0.
+    visibleFields: [id, status, total, discount, created-at]
+    editableFields: []
+    displayMode: detail
+    context: Read-only order summary shown to customers post-checkout.
+
+  - id: order-admin-view
+    name: Order Admin View
+    entityRef: order
+    intentRef: confirm-order-on-payment
+    visibleFields: [id, customer-id, status, total, discount, created-at, updated-at]
+    editableFields: [status]
+    requiredFields: [status]
+    validationRefs: [confirm-order-on-payment]
+    displayMode: form
+    context: Admin interface for managing order lifecycle states.
+
+  - id: order-list-table
+    name: Order List
+    entityRef: order
+    intentRef: confirm-order-on-payment
+    visibleFields: [id, status, total, discount, created-at]
+    displayMode: table
+    context: Paginated order list for admin dashboard.
+
+# ─────────────────────────────────────────────────────────────────────────────
+# INTEGRATION CONTRACTS
+# ─────────────────────────────────────────────────────────────────────────────
+
+integrationContracts:
+
+  - id: order-payment-contract
+    name: Order–Payment Integration
+    description: Payments service calls confirmOrder after successful payment.
+    version: "1.0.0"
+    status: active
+    producer:
+      id: order-service
+      name: Order Service
+      contact: tom.baker
+      endpoint: https://api.example.com/orders
+    consumers:
+      - id: payments-service
+        name: Payments Service
+        contact: sara.lee
+        endpoint: https://api.example.com/payments
+    sharedEntityRef: order
+    sharedOperationRef: confirm-order
+    scenarioRefs: [order-confirmed-on-payment, order-not-confirmed-on-failed-payment]
+    effectiveFrom: "2026-03-04T00:00:00Z"
+    changeNoticeDays: 30
+    backwardCompatible: true
+    signatures:
+      - { organisationId: order-service, signedBy: tom.baker, signedAt: "2026-03-04T10:30:00Z" }
+      - { organisationId: payments-service, signedBy: sara.lee, signedAt: "2026-03-04T11:00:00Z" }
+
+# ─────────────────────────────────────────────────────────────────────────────
+# KNOWN OPEN VECTORS
+# Declared governance gaps — enforced by declaration, not yet by tooling.
+# Each entry is a machine-readable record of an ungoverned surface.
+# Resolution status is tracked here until tooling closes the gap.
+# ─────────────────────────────────────────────────────────────────────────────
+
+knownVectors:
+
+  - id: entity-access-ungoverned
+    surface: operation-layer
+    description: >
+      Operation implementations can read or write any entity without
+      declaration. The canonical model has no reads/writes field on
+      operations, and the gate has no mechanism to verify entity access
+      at the operation layer. An operation in this domain could import
+      and access an entity from a foreign domain directly — bypassing
+      declared contracts — without the compiler or gate catching it.
+    severity: high
+    affectedComponents:
+      - src/operations/
+      - gate.js Pass 3
+    discoveredAt: "2026-03-05"
+    discoveredBy: architecture-assessment
+    rationale: >
+      Static analysis of entity access requires either AST-level code
+      parsing to trace imports through the call graph, or a module
+      structure that makes cross-entity imports impossible by construction.
+      Neither is reliable at the current stage. A reads/writes declaration
+      on operations without gate enforcement creates false confidence —
+      worse than no declaration. Deferred until AST analysis approach
+      is proven or module boundary enforcement is designed.
+    resolution: pending
+    resolutionApproach: >
+      Three candidate approaches under evaluation:
+      1. TypeScript module boundary enforcement — structure generated
+         code so cross-domain entity imports are impossible by the
+         module graph, not by convention.
+      2. AST-level gate pass — parse operation implementations and
+         trace entity access through the import graph. High
+         implementation cost, uncertain reliability.
+      3. Runtime interception — generated adapter middleware records
+         every entity access at the boundary. Catches violations
+         after they occur rather than preventing them.
+      Decision required before FABRIC Phase 2 Sprint C.
+    resolutionTarget: FABRIC Phase 2 Sprint C
+    relatedGaps:
+      - reads-writes-declaration-deferred
+      - operation-layer-ungoverned

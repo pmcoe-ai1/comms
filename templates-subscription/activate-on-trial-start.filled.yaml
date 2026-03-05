@@ -1,0 +1,276 @@
+_meta:
+  generatedAt: "2026-03-05T05:13:52.299Z"
+  generatedBy: dkce-template-generator
+  canonicalModelId: a1b2c3d4-e5f6-7890-abcd-ef1234567890
+  canonicalModelVersion: 1.0.0
+  ruleId: activate-on-trial-start
+  purpose:
+    - This template is an AI fill request produced by the DKCE Template Generator.
+    - "The AI fill stage (Claude API) must populate every slot marked _slot: REQUIRED."
+    - Filled output is passed to the Enforcement Gate Stage 1 before any code generation.
+    - The scenarios in context are the holdout set — AI cannot modify them.
+    - Fill only the slots in the "fill" section. Do not modify the "context" section.
+  filledAt: "2026-03-05T05:18:29.208Z"
+  filledBy: claude-sonnet-4-20250514
+  status: gate-failed-needs-refill
+  gateResult: FAIL
+  gateRunAt: "2026-03-05T12:28:27.648Z"
+  gatePass1: false
+  gatePass2: true
+  gatePass3: true
+  gatePass4: true
+context:
+  rule:
+    id: activate-on-trial-start
+    name: activateOnTrialStart
+    description: >
+      If the plan has a trial period (trialDays > 0), the subscription starts in trialing status with trialEndsAt set.
+      If trialDays is 0, the subscription starts in active status immediately.
+    priority: 1
+    enabled: true
+    tags: []
+  intent:
+    id: activate-trial-subscription
+    name: Activate Trial Subscription
+    description: >-
+      When a customer subscribes to a plan with a trial period, create the subscription in trialing status. Do not
+      charge until the trial ends.
+    priority: must
+    rationale: null
+  entity:
+    id: subscription
+    name: Subscription
+    description: A recurring billing agreement between a customer and a plan.
+    fields:
+      - id: id
+        name: id
+        type: uuid
+        required: true
+        nullable: false
+        immutable: true
+        systemField: true
+        glossaryRef: subscription
+      - id: customer-id
+        name: customerId
+        type: uuid
+        required: true
+        nullable: false
+        immutable: true
+        glossaryRef: subscription
+        refEntity: customer
+      - id: plan-id
+        name: planId
+        type: uuid
+        required: true
+        nullable: false
+        glossaryRef: plan
+        refEntity: plan
+      - id: status
+        name: status
+        type: enum
+        required: true
+        nullable: false
+        enumValues:
+          - trialing
+          - active
+          - past-due
+          - cancelled
+          - expired
+        glossaryRef: subscription
+      - id: trial-ends-at
+        name: trialEndsAt
+        type: datetime
+        required: false
+        nullable: true
+        glossaryRef: trial-period
+      - id: current-period-start
+        name: currentPeriodStart
+        type: datetime
+        required: true
+        nullable: false
+        glossaryRef: billing-cycle
+      - id: current-period-end
+        name: currentPeriodEnd
+        type: datetime
+        required: true
+        nullable: false
+        glossaryRef: billing-cycle
+      - id: anchor-date
+        name: anchorDate
+        type: integer
+        required: true
+        nullable: false
+        validation:
+          min: 1
+          max: 28
+        immutable: true
+        glossaryRef: subscription-anchor-date
+      - id: dunning-attempts
+        name: dunningAttempts
+        type: integer
+        required: true
+        nullable: false
+        validation:
+          min: 0
+          max: 3
+        glossaryRef: dunning
+        defaultValue: 0
+      - id: cancelled-at
+        name: cancelledAt
+        type: datetime
+        required: false
+        nullable: true
+      - id: created-at
+        name: createdAt
+        type: datetime
+        required: true
+        nullable: false
+        immutable: true
+        systemField: true
+      - id: updated-at
+        name: updatedAt
+        type: datetime
+        required: true
+        nullable: false
+        systemField: true
+    lifecycle:
+      statusField: status
+      initialState: trialing
+      terminalStates: []
+      transitions:
+        - from: trialing
+          to: active
+          trigger: trial-ends-without-cancellation
+          guard: null
+        - from: trialing
+          to: cancelled
+          trigger: customer-cancels
+          guard: null
+        - from: active
+          to: past-due
+          trigger: payment-fails
+          guard: null
+        - from: active
+          to: cancelled
+          trigger: customer-cancels
+          guard: null
+        - from: active
+          to: active
+          trigger: renewal-succeeds
+          guard: null
+        - from: past-due
+          to: active
+          trigger: retry-payment-succeeds
+          guard: null
+        - from: past-due
+          to: cancelled
+          trigger: dunning-exhausted
+          guard: null
+        - from: cancelled
+          to: active
+          trigger: reactivation
+          guard: null
+  glossary:
+    - id: subscription
+      term: Subscription
+      definition: >-
+        A recurring agreement between a customer and the platform to provide access to a plan in exchange for periodic
+        payment. A subscription is active when payment is current and the trial period (if any) has not expired without
+        conversion.
+      precision:
+        type: enum
+        values:
+          - trialing
+          - active
+          - past-due
+          - cancelled
+          - expired
+      counterexamples:
+        - A one-time purchase is not a Subscription
+    - id: plan
+      term: Plan
+      definition: >-
+        A named tier of service with a declared price, billing interval, and feature set. Plans are versioned — a
+        customer subscribes to a specific plan version.
+    - id: trial-period
+      term: Trial Period
+      definition: >-
+        An optional period at the start of a subscription during which the customer has full access but is not charged.
+        Trial ends on trialEndsAt. If the customer does not cancel before trialEndsAt, the subscription converts to
+        active and the first billing cycle begins.
+      precision:
+        type: range
+        min: 0
+        max: 90
+        unit: days
+    - id: billing-cycle
+      term: Billing Cycle
+      definition: >-
+        The recurring period for which a subscription is charged. Defined by the plan's interval (monthly or annual). A
+        billing cycle begins on the subscription's anchor date and ends on the next anchor date.
+      precision:
+        type: enum
+        values:
+          - monthly
+          - annual
+    - id: subscription-anchor-date
+      term: Anchor Date
+      definition: >-
+        The day of the month on which billing cycles begin and end. Set at subscription creation. Immutable — never
+        changes even if the plan changes.
+    - id: dunning
+      term: Dunning
+      definition: >-
+        The process of retrying a failed payment on a declining schedule before marking the subscription as cancelled.
+        Maximum 3 retry attempts over 7 days. If all retries fail, subscription moves to cancelled.
+      precision:
+        type: range
+        min: 0
+        max: 3
+        unit: attempts
+  scenarios:
+    _purpose: These are the holdout set. The filled rule must satisfy ALL must-pass scenarios.
+    items:
+      - id: subscription-created-in-trial
+        coverageType: happy
+        given: a customer subscribes to Pro plan with 14-day trial
+        when: subscribe-to-plan
+        then: subscription is created in trialing status with trialEndsAt set
+        priority: must-pass
+        fieldValues:
+          - field: status
+            value: trialing
+      - id: subscription-created-without-trial
+        coverageType: edge
+        given: a customer subscribes to Basic plan with no trial period
+        when: subscribe-to-plan
+        then: subscription is created in active status with trialEndsAt null
+        priority: must-pass
+        fieldValues:
+          - field: status
+            value: active
+  knownLimitations:
+    - LeafCondition can only reference fields on this entity. Cross-entity checks belong at the operation layer.
+    - >-
+      ArithmeticExpression is single-operator only: field op literal. Decompose complex calculations into chained
+      actions.
+fill:
+  _instructions:
+    - 1. Read the context section completely before filling.
+    - 2. For each REQUIRED slot, replace the slot object with a valid value.
+    - 3. Your fill must satisfy every scenario in context.scenarios.items where priority is must-pass.
+    - 4. Reference only field ids listed in context.entity.fields.
+    - 5. For enum fields, use only values listed in field.enumValues.
+    - 6. For lifecycle transitions, only set status values that are reachable per context.entity.lifecycle.transitions.
+    - 7. Return this entire document with the fill section completed. Do not modify the context section.
+  condition:
+    field: status
+    operator: is-null
+  action:
+    type: set
+    field: status
+    value: trialing
+    then:
+      - type: emit-event
+        event: subscription.trial-started
+  elseAction: null
