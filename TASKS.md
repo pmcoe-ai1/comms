@@ -1,6 +1,6 @@
 # DKCE + FABRIC Task List
 Generated from: PLAN.md, FABRIC.docx, BUGS.md, direct file verification
-Last updated: 2026-03-06T09:00:00Z
+Last updated: 2026-03-06T09:30:00Z
 ---
 ## How to use this file
 This is the authoritative task tracker for the DKCE + FABRIC project.
@@ -34,7 +34,7 @@ Rules:
 | TASK-09 | Write src/rules/check-stock-on-add-item.ts | ✅ DONE | TASK-08 | — | Verified: real implementation exists |
 | TASK-10 | Run order-management scenario runner — all 3 rules must pass | ✅ DONE | TASK-09 | — | Verified: 7 tests passing |
 | TASK-11 | Run fill.js against activate-on-trial-start template | ✅ DONE | — | — | Filled via Claude API. Status: filled-pending-gate. Commit 450ecee |
-| TASK-12 | Run gate.js all 4 passes against re-filled activate-on-trial-start | ✗ NOT DONE | TASK-11 | — | — |
+| TASK-12 | Run gate.js all 4 passes against re-filled activate-on-trial-start | ✅ DONE | TASK-11 | — | All 4 passes PASS. Commit aa33dac |
 | TASK-13 | Run codegen.js against subscription-billing.canonical-model.yaml | ✗ NOT DONE | TASK-12 | — | Replace placeholder stub |
 | TASK-14 | Run tsc --noEmit — must be clean after placeholder replaced | ✗ NOT DONE | TASK-13 | — | — |
 | TASK-15 | Investigate 6 it.failing subscription scenario tests — promote resolved, document remainder | ✗ NOT DONE | TASK-14 | — | All 6 are operation-layer gaps per scenario runner report |
