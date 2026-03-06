@@ -1,6 +1,6 @@
 # DKCE + FABRIC Task List
 Generated from: PLAN.md, FABRIC.docx, BUGS.md, direct file verification
-Last updated: 2026-03-06T23:15:00Z
+Last updated: 2026-03-06T23:30:00Z
 ---
 ## How to use this file
 This is the authoritative task tracker for the DKCE + FABRIC project.
@@ -142,3 +142,4 @@ TASK-19 ✅ → TASK-23 → TASK-24 → TASK-25
 | TASK-62 | Fix 146 schema validation errors in subscription-billing canonical model | ✅ DONE | -- | -- | Fixed: events missing name/entityRef, conditions op→operator, scenarios/entities/lifecycle structure. validate.js ✓ PASS, gate PASS, codegen 19 files, tsc clean, 7 jest pass. Commit a6569cb |
 | TASK-63 | Document non-linear schema versioning in AGENTS.md (v2.1.0 shipped before v2.0.0) | ✅ DONE | -- | -- | AGENTS.md updated with non-linear versioning policy section. Commit fcfcd70 |
 | TASK-64 | Fix check-stock-on-add-item.filled.yaml — action references non-existent operation validate-stock-availability | ✅ DONE | -- | -- | Fixed: fill.action changed to call-operation: add-order-item. Gate PASS (all 4 passes). tsc clean. 7 scenario tests pass. Commit 6e3aba9. Verified: templates/check-stock-on-add-item.filled.yaml:184 |
+| TASK-65 | Fix gate.js Pass 1 — initialState not recognized as valid lifecycle target state | ✅ DONE | -- | -- | gate.js:327-328 — added initialState to validNextStates set. activate-on-trial-start.filled.yaml now passes Pass 1. All 3 filled templates PASS. tsc clean, 64 tests pass. |

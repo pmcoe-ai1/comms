@@ -324,6 +324,8 @@ if (runTemplateGate) {
                 // No source state in condition — fall back to global check
                 validNextStates = new Set(entity.lifecycle.transitions.map(t => t.to));
               }
+              // initialState is always a valid target — rules may set status on creation
+              if (entity.lifecycle.initialState) validNextStates.add(entity.lifecycle.initialState);
               if (!validNextStates.has(targetValue)) {
                 const fromClause = sourceStates.length > 0 ? ` from '${sourceStates.join("', '")}'` : '';
                 fail1(`${actionPath}: status value '${targetValue}' is not a valid lifecycle target state${fromClause}. ` +
