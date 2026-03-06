@@ -284,10 +284,7 @@ function conditionSlotSpec(entity, rule) {
 function actionSlotSpec(entity, rule) {
   const fields = buildFieldManifest(entity);
   const writableFields = fields.filter(f => !f.systemField && !f.immutable);
-  const declaredEvents = (rule.condition?.then || [])
-    .concat([])
-    .filter(a => a?.event)
-    .map(a => a.event);
+  // BUG-012: dead code removed — condition does not have a then property
 
   // Collect events that exist in the event registry for this entity
   const relevantEvents = Object.values(eventIndex)
