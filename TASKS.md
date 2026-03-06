@@ -1,6 +1,6 @@
 # DKCE + FABRIC Task List
 Generated from: PLAN.md, FABRIC.docx, BUGS.md, direct file verification
-Last updated: 2026-03-06T10:30:00Z
+Last updated: 2026-03-06T11:15:00Z
 ---
 ## How to use this file
 This is the authoritative task tracker for the DKCE + FABRIC project.
@@ -37,7 +37,7 @@ Rules:
 | TASK-12 | Run gate.js all 4 passes against re-filled activate-on-trial-start | ✅ DONE | TASK-11 | — | All 4 passes PASS. Commit aa33dac |
 | TASK-13 | Run codegen.js against subscription-billing.canonical-model.yaml | ✅ DONE | TASK-12 | — | Codegen complete. Lifecycle compat shim + filled template lookup fix added. 0 GapFlags. Commit 350282e |
 | TASK-14 | Run tsc --noEmit — must be clean after placeholder replaced | ✅ DONE | TASK-13 | — | tsc --noEmit exit 0. Restored check-stock-on-add-item stub deleted by codegen. |
-| TASK-15 | Investigate 6 it.failing subscription scenario tests — promote resolved, document remainder | ✗ NOT DONE | TASK-14 | — | All 6 are operation-layer gaps per scenario runner report |
+| TASK-15 | Investigate 6 it.failing subscription scenario tests — promote resolved, document remainder | ✅ DONE | TASK-14 | — | Verified: 11 sub tests pass (5 regular + 6 it.failing). 0 promotable. All 6 it.failing are genuine operation-layer gaps: activate-on-trial-start (2: cross-entity plan.trialDays), renew-active-subscription (2: no rule mapped), handle-dunning-retry (2: rule increments counter only). Fixed OpenAPI version assertions 1.0.0→1.1.0. Finding: activate-on-trial-start src impl stale vs new fill (was call-operation, now set status=trialing). |
 | TASK-16 | Write chain.js — PostgreSQL append-only, SHA-256, schema: pipeline_run { id, stage, canonicalModelHash, prevHash, artifactHash, timestamp, status } | ✗ NOT DONE | — | PostgreSQL instance | Foundation of FABRIC audit trail |
 | TASK-17 | Write Prisma trigger migration scripts for immutable:true fields in both canonical models | ✗ NOT DONE | — | PostgreSQL instance | Gap 8 |
 | TASK-18 | Write .github/workflows/dkce.yml — stages: validate → template-generator → fill → gate → codegen → tsc → scenario runner → chain record → block deploy | ✗ NOT DONE | TASK-03, TASK-04, TASK-05, TASK-10, TASK-15, TASK-16 | — | Include glossary checker and ANTHROPIC_API_KEY as CI secret |
