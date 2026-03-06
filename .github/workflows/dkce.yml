@@ -1,6 +1,7 @@
 # ─────────────────────────────────────────────────────────────────────────────
 # DKCE CI Pipeline — .github/workflows/dkce.yml
 # Runs the full DKCE pipeline: validate → gate → codegen → tsc → scenarios → chain
+# Plus: oasdiff breaking change detection (Gap 7) on PRs
 #
 # Trigger: push/PR to main + manual dispatch with model selection
 # ─────────────────────────────────────────────────────────────────────────────
@@ -62,7 +63,7 @@ jobs:
           github.event.inputs.model == 'subscription-billing' ||
           github.event.inputs.model == ''
         run: node validate.js files/subscription-billing.canonical-model.yaml
-        continue-on-error: true  # 167 pre-existing schema errors — tracked for cleanup
+        continue-on-error: true  # 167 pre-existing schema errors — tracked for cleanup (VERIFY-04)
 
   # ─────────────────────────────────────────────────────────────────────────
   # Job 2: (Optional) AI Fill — only on manual dispatch with run_fill=true
@@ -224,7 +225,35 @@ jobs:
         run: npx jest --ci --forceExit
 
   # ─────────────────────────────────────────────────────────────────────────
-  # Job 7: Chain Record — append-only audit trail (push to main only)
+  # Job 7: oasdiff — OpenAPI breaking change detection (PRs only, Gap 7)
+  # ─────────────────────────────────────────────────────────────────────────
+  oasdiff:
+    name: OpenAPI Breaking Change Check
+    runs-on: ubuntu-latest
+    needs: codegen
+    if: github.event_name == 'pull_request'
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 2
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - run: npm ci
+
+      - name: Download generated artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: generated-artifacts
+
+      - name: Check for breaking changes
+        run: node oasdiff-check.js
+
+  # ─────────────────────────────────────────────────────────────────────────
+  # Job 8: Chain Record — append-only audit trail (push to main only)
   # ─────────────────────────────────────────────────────────────────────────
   chain-record:
     name: Chain Record (main only)
@@ -270,20 +299,27 @@ jobs:
             --status pass
 
   # ─────────────────────────────────────────────────────────────────────────
-  # Job 8: Deploy Gate — all checks must pass before merge
+  # Job 9: Deploy Gate — all checks must pass before merge
   # ─────────────────────────────────────────────────────────────────────────
   deploy-gate:
     name: Deploy Gate
     runs-on: ubuntu-latest
-    needs: [tsc, scenario-runner]
+    needs: [tsc, scenario-runner, oasdiff]
     if: always()
     steps:
       - name: Check all upstream jobs
         run: |
           echo "tsc result: ${{ needs.tsc.result }}"
           echo "scenario-runner result: ${{ needs.scenario-runner.result }}"
+          echo "oasdiff result: ${{ needs.oasdiff.result }}"
+          # tsc and scenario-runner must succeed
           if [ "${{ needs.tsc.result }}" != "success" ] || [ "${{ needs.scenario-runner.result }}" != "success" ]; then
-            echo "::error::Deploy gate failed — upstream jobs did not all succeed"
+            echo "::error::Deploy gate failed — tsc or scenario-runner did not succeed"
+            exit 1
+          fi
+          # oasdiff must succeed or be skipped (skipped on push to main)
+          if [ "${{ needs.oasdiff.result }}" != "success" ] && [ "${{ needs.oasdiff.result }}" != "skipped" ]; then
+            echo "::error::Deploy gate failed — oasdiff detected breaking changes"
             exit 1
           fi
           echo "✓ Deploy gate passed — all checks green"
