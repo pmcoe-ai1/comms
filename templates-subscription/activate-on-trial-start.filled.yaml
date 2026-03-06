@@ -10,15 +10,9 @@ _meta:
     - Filled output is passed to the Enforcement Gate Stage 1 before any code generation.
     - The scenarios in context are the holdout set — AI cannot modify them.
     - Fill only the slots in the "fill" section. Do not modify the "context" section.
-  filledAt: "2026-03-05T05:18:29.208Z"
+  filledAt: "2026-03-06T07:35:11.741Z"
   filledBy: claude-sonnet-4-20250514
-  status: gate-failed-needs-refill
-  gateResult: FAIL
-  gateRunAt: "2026-03-05T12:28:27.648Z"
-  gatePass1: false
-  gatePass2: true
-  gatePass3: true
-  gatePass4: true
+  status: filled-pending-gate
 context:
   rule:
     id: activate-on-trial-start
@@ -264,8 +258,8 @@ fill:
     - 6. For lifecycle transitions, only set status values that are reachable per context.entity.lifecycle.transitions.
     - 7. Return this entire document with the fill section completed. Do not modify the context section.
   condition:
-    field: status
-    operator: is-null
+    field: plan-id
+    operator: is-not-null
   action:
     type: set
     field: status
