@@ -185,7 +185,7 @@ describe('OpenAPI spec validation (TASK-05)', () => {
     it('has correct title and version', () => {
       const spec = loadSpec(SUB_SPEC);
       expect(spec.info.title).toBe('subscription-billing API');
-      expect(spec.info.version).toBe('1.1.0');
+      expect(spec.info.version).toBe('1.2.0');
     });
 
     it('has at least one path defined', () => {
