@@ -251,19 +251,18 @@ describe('Glossary precision boundary property tests (TASK-04)', () => {
     });
   }
 
-  // -- Specific inconsistency test ------------------------------------------
-  // dunning-attempts: field validation.max=3 but glossary precision.max=4
-  // This documents the known intentional inconsistency.
+  // -- Consistency test (BUG-018 resolved) -----------------------------------
+  // dunning-attempts: field validation.max=4 and glossary precision.max=4
+  // Previously inconsistent (field max=3, glossary max=4). Fixed by BUG-018.
 
-  describe('dunning-attempts: validation/glossary inconsistency', () => {
+  describe('dunning-attempts: validation/glossary consistency (BUG-018 resolved)', () => {
     const dunning = BOUNDARIES.find(b => b.glossaryId === 'dunning')!;
 
-    it('value 4 passes glossary check (max=4) but fails field validation (max=3)', () => {
+    it('value 4 passes both glossary check (max=4) and field validation (max=4)', () => {
       const result = runGate(buildTemplate(dunning, 4), dunning.modelPath);
-      // Glossary range [0, 4]: value 4 is within range
+      // Both glossary and field validation max=4: value 4 is within range
       expect(hasGlossaryError(result.stdout)).toBe(false);
-      // Field validation max=3: value 4 exceeds it
-      expect(hasFieldValidationError(result.stdout)).toBe(true);
+      expect(hasFieldValidationError(result.stdout)).toBe(false);
     });
 
     it('value 3 passes both glossary check and field validation', () => {
@@ -272,7 +271,7 @@ describe('Glossary precision boundary property tests (TASK-04)', () => {
       expect(hasFieldValidationError(result.stdout)).toBe(false);
     });
 
-    it('value 5 fails both glossary check (max=4) and field validation (max=3)', () => {
+    it('value 5 fails both glossary check (max=4) and field validation (max=4)', () => {
       const result = runGate(buildTemplate(dunning, 5), dunning.modelPath);
       expect(hasGlossaryError(result.stdout)).toBe(true);
       expect(hasFieldValidationError(result.stdout)).toBe(true);
