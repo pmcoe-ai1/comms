@@ -1,7 +1,14 @@
 # ─────────────────────────────────────────────────────────────────────────────
 # DKCE CI Pipeline — .github/workflows/dkce.yml
-# Runs the full DKCE pipeline: validate → gate → codegen → tsc → scenarios → chain
-# Plus: oasdiff breaking change detection (Gap 7) on PRs
+# Full pipeline in one shared-filesystem job:
+#   validate → template-gen → gate (Pass 1-4 filled + Pass 3-4 model)
+#   → codegen → tsc → scenario-runner
+# Plus: oasdiff (PRs), chain-record (main push), fill (manual), deploy-gate
+#
+# FIX-02 (TASK-57): collapsed multi-job pipeline into one runner (job isolation fix)
+# FIX-03 (TASK-55): gate now runs Pass 1-4 against filled templates
+# FIX-04 (TASK-56): template-generator stage added before gate
+# FIX-08 (TASK-61): chain.js graceful fallback when DATABASE_URL missing
 #
 # Trigger: push/PR to main + manual dispatch with model selection
 # ─────────────────────────────────────────────────────────────────────────────
@@ -35,10 +42,12 @@ env:
 
 jobs:
   # ─────────────────────────────────────────────────────────────────────────
-  # Job 1: Validate canonical models against JSON Schema
+  # Job 1: pipeline — all stages share one runner/filesystem (FIX-02)
+  # validate → template-gen (FIX-04) → gate Pass 1-4 filled (FIX-03)
+  # → gate Pass 3-4 model → codegen → tsc → scenario-runner
   # ─────────────────────────────────────────────────────────────────────────
-  validate:
-    name: Validate Canonical Models
+  pipeline:
+    name: DKCE Pipeline (validate → gate → codegen → tsc → jest)
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -50,28 +59,117 @@ jobs:
 
       - run: npm ci
 
-      - name: Validate example.canonical-model.yaml
+      # ── Stage 1: Validate canonical models ────────────────────────────
+      - name: Validate — example.canonical-model.yaml
         if: >-
           github.event.inputs.model == 'all' ||
           github.event.inputs.model == 'example' ||
           github.event.inputs.model == ''
         run: node validate.js files/example.canonical-model.yaml
 
-      - name: Validate subscription-billing.canonical-model.yaml
+      - name: Validate — subscription-billing.canonical-model.yaml
         if: >-
           github.event.inputs.model == 'all' ||
           github.event.inputs.model == 'subscription-billing' ||
           github.event.inputs.model == ''
         run: node validate.js files/subscription-billing.canonical-model.yaml
-        continue-on-error: true  # 167 pre-existing schema errors — tracked for cleanup (VERIFY-04)
+        continue-on-error: true  # 167 pre-existing schema errors — VERIFY-04 / TASK-62
+
+      # ── Stage 2: Template Generator (FIX-04 / TASK-56) ────────────────
+      - name: Template Generator — example model
+        if: >-
+          github.event.inputs.model == 'all' ||
+          github.event.inputs.model == 'example' ||
+          github.event.inputs.model == ''
+        run: node files/template-generator.js files/example.canonical-model.yaml --output-dir ./templates
+
+      - name: Template Generator — subscription-billing model
+        if: >-
+          github.event.inputs.model == 'all' ||
+          github.event.inputs.model == 'subscription-billing' ||
+          github.event.inputs.model == ''
+        run: node files/template-generator.js files/subscription-billing.canonical-model.yaml --output-dir ./templates-subscription
+
+      # ── Stage 3: Gate Pass 1-4 against filled templates (FIX-03) ──────
+      - name: Gate Pass 1-4 — example filled templates
+        if: >-
+          github.event.inputs.model == 'all' ||
+          github.event.inputs.model == 'example' ||
+          github.event.inputs.model == ''
+        run: |
+          shopt -s nullglob
+          filled=( templates/*.filled.yaml )
+          if [ ${#filled[@]} -eq 0 ]; then
+            echo "No filled templates found for example model — skipping gate Pass 1-4"
+            exit 0
+          fi
+          for f in "${filled[@]}"; do
+            echo "--- Gate Pass 1-4: $f ---"
+            node gate.js "$f" --model files/example.canonical-model.yaml
+          done
+
+      - name: Gate Pass 1-4 — subscription-billing filled templates
+        if: >-
+          github.event.inputs.model == 'all' ||
+          github.event.inputs.model == 'subscription-billing' ||
+          github.event.inputs.model == ''
+        run: |
+          shopt -s nullglob
+          filled=( templates-subscription/*.filled.yaml )
+          if [ ${#filled[@]} -eq 0 ]; then
+            echo "No filled templates for subscription-billing — skipping gate Pass 1-4"
+            exit 0
+          fi
+          for f in "${filled[@]}"; do
+            echo "--- Gate Pass 1-4: $f ---"
+            node gate.js "$f" --model files/subscription-billing.canonical-model.yaml
+          done
+
+      # ── Stage 4: Gate Pass 3-4 — model-level checks ───────────────────
+      - name: Gate Pass 3-4 — example model
+        if: >-
+          github.event.inputs.model == 'all' ||
+          github.event.inputs.model == 'example' ||
+          github.event.inputs.model == ''
+        run: node gate.js --model files/example.canonical-model.yaml
+
+      - name: Gate Pass 3-4 — subscription-billing model
+        if: >-
+          github.event.inputs.model == 'all' ||
+          github.event.inputs.model == 'subscription-billing' ||
+          github.event.inputs.model == ''
+        run: node gate.js --model files/subscription-billing.canonical-model.yaml
+
+      # ── Stage 5: Codegen ───────────────────────────────────────────────
+      - name: Codegen — example model
+        if: >-
+          github.event.inputs.model == 'all' ||
+          github.event.inputs.model == 'example' ||
+          github.event.inputs.model == ''
+        run: node codegen.js files/example.canonical-model.yaml
+
+      - name: Codegen — subscription-billing model
+        if: >-
+          github.event.inputs.model == 'all' ||
+          github.event.inputs.model == 'subscription-billing' ||
+          github.event.inputs.model == ''
+        run: node codegen.js files/subscription-billing.canonical-model.yaml
+
+      # ── Stage 6: TypeScript compiler — drift wall ──────────────────────
+      - name: tsc --noEmit
+        run: npx tsc --noEmit
+
+      # ── Stage 7: Scenario runner — Gate Stage 2 ────────────────────────
+      - name: Scenario runner tests
+        run: npx jest --ci --forceExit
 
   # ─────────────────────────────────────────────────────────────────────────
-  # Job 2: (Optional) AI Fill — only on manual dispatch with run_fill=true
+  # Job 2: fill — AI fill, manual dispatch only (needs ANTHROPIC_API_KEY)
   # ─────────────────────────────────────────────────────────────────────────
   fill:
     name: AI Fill (Manual Only)
     runs-on: ubuntu-latest
-    needs: validate
+    needs: pipeline
     if: >-
       github.event_name == 'workflow_dispatch' &&
       github.event.inputs.run_fill == 'true'
@@ -105,132 +203,13 @@ jobs:
             templates-subscription/
 
   # ─────────────────────────────────────────────────────────────────────────
-  # Job 3: Gate — enforce filled templates (Pass 1-4)
-  # ─────────────────────────────────────────────────────────────────────────
-  gate:
-    name: Enforcement Gate (Pass 1-4)
-    runs-on: ubuntu-latest
-    needs: validate
-    steps:
-      - uses: actions/checkout@v4
-
-      - uses: actions/setup-node@v4
-        with:
-          node-version: ${{ env.NODE_VERSION }}
-          cache: 'npm'
-
-      - run: npm ci
-
-      - name: Gate — example model
-        if: >-
-          github.event.inputs.model == 'all' ||
-          github.event.inputs.model == 'example' ||
-          github.event.inputs.model == ''
-        run: node gate.js --model files/example.canonical-model.yaml
-
-      - name: Gate — subscription-billing model
-        if: >-
-          github.event.inputs.model == 'all' ||
-          github.event.inputs.model == 'subscription-billing' ||
-          github.event.inputs.model == ''
-        run: node gate.js --model files/subscription-billing.canonical-model.yaml
-
-  # ─────────────────────────────────────────────────────────────────────────
-  # Job 4: Codegen — generate all artifacts
-  # ─────────────────────────────────────────────────────────────────────────
-  codegen:
-    name: Code Generation
-    runs-on: ubuntu-latest
-    needs: gate
-    steps:
-      - uses: actions/checkout@v4
-
-      - uses: actions/setup-node@v4
-        with:
-          node-version: ${{ env.NODE_VERSION }}
-          cache: 'npm'
-
-      - run: npm ci
-
-      - name: Codegen — example model
-        if: >-
-          github.event.inputs.model == 'all' ||
-          github.event.inputs.model == 'example' ||
-          github.event.inputs.model == ''
-        run: node codegen.js files/example.canonical-model.yaml
-
-      - name: Codegen — subscription-billing model
-        if: >-
-          github.event.inputs.model == 'all' ||
-          github.event.inputs.model == 'subscription-billing' ||
-          github.event.inputs.model == ''
-        run: node codegen.js files/subscription-billing.canonical-model.yaml
-
-      - name: Upload generated artifacts
-        uses: actions/upload-artifact@v4
-        with:
-          name: generated-artifacts
-          path: |
-            generated/
-            generated-subscription/
-
-  # ─────────────────────────────────────────────────────────────────────────
-  # Job 5: TypeScript compiler — drift wall
-  # ─────────────────────────────────────────────────────────────────────────
-  tsc:
-    name: TypeScript Compile Check
-    runs-on: ubuntu-latest
-    needs: codegen
-    steps:
-      - uses: actions/checkout@v4
-
-      - uses: actions/setup-node@v4
-        with:
-          node-version: ${{ env.NODE_VERSION }}
-          cache: 'npm'
-
-      - run: npm ci
-
-      - name: Download generated artifacts
-        uses: actions/download-artifact@v4
-        with:
-          name: generated-artifacts
-
-      - name: tsc --noEmit
-        run: npx tsc --noEmit
-
-  # ─────────────────────────────────────────────────────────────────────────
-  # Job 6: Scenario Runner — Gate Stage 2
-  # ─────────────────────────────────────────────────────────────────────────
-  scenario-runner:
-    name: Scenario Runner Tests
-    runs-on: ubuntu-latest
-    needs: codegen
-    steps:
-      - uses: actions/checkout@v4
-
-      - uses: actions/setup-node@v4
-        with:
-          node-version: ${{ env.NODE_VERSION }}
-          cache: 'npm'
-
-      - run: npm ci
-
-      - name: Download generated artifacts
-        uses: actions/download-artifact@v4
-        with:
-          name: generated-artifacts
-
-      - name: Run scenario tests
-        run: npx jest --ci --forceExit
-
-  # ─────────────────────────────────────────────────────────────────────────
-  # Job 7: oasdiff — OpenAPI breaking change detection (PRs only, Gap 7)
+  # Job 3: oasdiff — OpenAPI breaking change detection (PRs only, Gap 7)
+  # Re-runs codegen on PR runner to get generated files for diffing
   # ─────────────────────────────────────────────────────────────────────────
   oasdiff:
     name: OpenAPI Breaking Change Check
     runs-on: ubuntu-latest
-    needs: codegen
+    needs: pipeline
     if: github.event_name == 'pull_request'
     steps:
       - uses: actions/checkout@v4
@@ -244,21 +223,22 @@ jobs:
 
       - run: npm ci
 
-      - name: Download generated artifacts
-        uses: actions/download-artifact@v4
-        with:
-          name: generated-artifacts
+      - name: Codegen (regenerate for oasdiff comparison)
+        run: |
+          node codegen.js files/example.canonical-model.yaml
+          node codegen.js files/subscription-billing.canonical-model.yaml
 
       - name: Check for breaking changes
         run: node oasdiff-check.js
 
   # ─────────────────────────────────────────────────────────────────────────
-  # Job 8: Chain Record — append-only audit trail (push to main only)
+  # Job 4: chain-record — append-only audit trail (push to main only)
+  # DATABASE_URL not set → graceful warning, no failure (FIX-08 / TASK-61)
   # ─────────────────────────────────────────────────────────────────────────
   chain-record:
     name: Chain Record (main only)
     runs-on: ubuntu-latest
-    needs: [tsc, scenario-runner]
+    needs: pipeline
     if: github.ref == 'refs/heads/main' && github.event_name == 'push'
     steps:
       - uses: actions/checkout@v4
@@ -270,12 +250,17 @@ jobs:
 
       - run: npm ci
 
+      - name: Codegen (regenerate for chain hash)
+        run: |
+          node codegen.js files/example.canonical-model.yaml
+          node codegen.js files/subscription-billing.canonical-model.yaml
+
       - name: Record pipeline run — example model
         env:
           DATABASE_URL: ${{ secrets.DATABASE_URL }}
         run: |
           if [ -z "$DATABASE_URL" ]; then
-            echo "::warning::DATABASE_URL not set — skipping chain record"
+            echo "::warning::DATABASE_URL not set — skipping chain record (TASK-61)"
             exit 0
           fi
           node chain.js record \
@@ -289,7 +274,7 @@ jobs:
           DATABASE_URL: ${{ secrets.DATABASE_URL }}
         run: |
           if [ -z "$DATABASE_URL" ]; then
-            echo "::warning::DATABASE_URL not set — skipping chain record"
+            echo "::warning::DATABASE_URL not set — skipping chain record (TASK-61)"
             exit 0
           fi
           node chain.js record \
@@ -299,25 +284,24 @@ jobs:
             --status pass
 
   # ─────────────────────────────────────────────────────────────────────────
-  # Job 9: Deploy Gate — all checks must pass before merge
+  # Job 5: deploy-gate — final check gate (always runs)
+  # pipeline must succeed; oasdiff must succeed or be skipped (non-PR runs)
   # ─────────────────────────────────────────────────────────────────────────
   deploy-gate:
     name: Deploy Gate
     runs-on: ubuntu-latest
-    needs: [tsc, scenario-runner, oasdiff]
+    needs: [pipeline, oasdiff]
     if: always()
     steps:
       - name: Check all upstream jobs
         run: |
-          echo "tsc result: ${{ needs.tsc.result }}"
-          echo "scenario-runner result: ${{ needs.scenario-runner.result }}"
+          echo "pipeline result: ${{ needs.pipeline.result }}"
           echo "oasdiff result: ${{ needs.oasdiff.result }}"
-          # tsc and scenario-runner must succeed
-          if [ "${{ needs.tsc.result }}" != "success" ] || [ "${{ needs.scenario-runner.result }}" != "success" ]; then
-            echo "::error::Deploy gate failed — tsc or scenario-runner did not succeed"
+          if [ "${{ needs.pipeline.result }}" != "success" ]; then
+            echo "::error::Deploy gate failed — pipeline did not succeed"
             exit 1
           fi
-          # oasdiff must succeed or be skipped (skipped on push to main)
+          # oasdiff must succeed or be skipped (skipped on push to main, manual dispatch)
           if [ "${{ needs.oasdiff.result }}" != "success" ] && [ "${{ needs.oasdiff.result }}" != "skipped" ]; then
             echo "::error::Deploy gate failed — oasdiff detected breaking changes"
             exit 1
