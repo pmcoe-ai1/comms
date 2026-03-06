@@ -1,6 +1,6 @@
 # DKCE + FABRIC Task List
 Generated from: PLAN.md, FABRIC.docx, BUGS.md, direct file verification
-Last updated: 2026-03-06T22:00:00Z
+Last updated: 2026-03-06T22:30:00Z
 ---
 ## How to use this file
 This is the authoritative task tracker for the DKCE + FABRIC project.
@@ -133,11 +133,11 @@ TASK-19 ✅ → TASK-23 → TASK-24 → TASK-25
 ## AUDIT-02 Tasks -- discovered by FABRIC.md vs source code audit (2026-03-06)
 | ID | Task | Status | Depends on | Blocked on | Notes |
 |---|---|---|---|---|---|
-| TASK-53 | Add expectedResult, coverageType, outputFieldRefs to all 11 scenarios in subscription-billing.canonical-model.yaml | ✅ DONE | -- | -- | All 11 scenarios updated. meta.version bumped to 1.2.0. Gate Pass 2 now operational for subscription domain. Commit 815daef |
-| TASK-54 | Add operation stubs to codegen output (generated/operations/ directory) per FABRIC section 8 | ✅ DONE | -- | -- | codegen.js generateOperationStubs() added. 10 stubs for order-management, 7 for subscription-billing. Commit 9c8ac64 |
-| TASK-55 | Fix CI gate job to run Pass 1-4 against filled templates | ✅ DONE | -- | -- | .github/workflows/dkce.yml pipeline job runs gate against all *.filled.yaml files. Commit 769a9c4 |
-| TASK-56 | Add template-generator stage to CI pipeline so templates are regenerated when canonical model changes | ✅ DONE | -- | -- | .github/workflows/dkce.yml pipeline job includes template-gen step for both models. Commit 769a9c4 |
-| TASK-57 | Fix CI pipeline job isolation — collapse 9 isolated jobs into 5 jobs sharing filesystem | ✅ DONE | -- | -- | .github/workflows/dkce.yml rewritten: pipeline/fill/oasdiff/chain-record/deploy-gate. All pipeline stages share one runner. Commit 769a9c4 |
+| TASK-53 | Add expectedResult, coverageType, outputFieldRefs to all 11 scenarios in subscription-billing.canonical-model.yaml | ✅ DONE | -- | -- | All 11 scenarios updated. meta.version bumped to 1.2.0. Gate Pass 2 now operational for subscription domain. Commit 815daef. Verified: 2026-03-06 (CHECK-9 PASS — 12 expectedResult occurrences across 11 scenarios) |
+| TASK-54 | Add operation stubs to codegen output (generated/operations/ directory) per FABRIC section 8 | ✅ DONE | -- | -- | codegen.js generateOperationStubs() added. 10 stubs for order-management, 7 for subscription-billing. Commit 9c8ac64. Verified: 2026-03-06 (CHECK-10 PASS — codegen.js:1204 function exists, called at :1341) |
+| TASK-55 | Fix CI gate job to run Pass 1-4 against filled templates | ✅ DONE | -- | -- | .github/workflows/dkce.yml pipeline job runs gate against all *.filled.yaml files. Commit 769a9c4. Verification-Failed: CHECK-7 — CI pipeline failing on main (3 consecutive failures). Gate correctly runs Pass 1-4 per task goal, but check-stock-on-add-item.filled.yaml fails Pass 1: fill.action references operation validate-stock-availability which does not exist in the canonical model. Pre-existing template issue now surfaced by this task's gate step. Fix required: re-fill or fix check-stock-on-add-item.filled.yaml. |
+| TASK-56 | Add template-generator stage to CI pipeline so templates are regenerated when canonical model changes | ✅ DONE | -- | -- | .github/workflows/dkce.yml pipeline job includes template-gen step for both models. Commit 769a9c4. Verified: 2026-03-06 (CHECK-1 PASS — dkce.yml changes confirmed in 769a9c4) |
+| TASK-57 | Fix CI pipeline job isolation — collapse 9 isolated jobs into 5 jobs sharing filesystem | ✅ DONE | -- | -- | .github/workflows/dkce.yml rewritten: pipeline/fill/oasdiff/chain-record/deploy-gate. All pipeline stages share one runner. Commit 769a9c4. Verified: 2026-03-06 (CHECK-1 PASS — 769a9c4 dkce.yml +119/-135 lines confirmed) |
 | TASK-61 | chain.js graceful fallback when DATABASE_URL missing; CI chain-record step handles missing secret | ⚠ PARTIAL | -- | -- | CI chain-record updated with DATABASE_URL fallback comment. chain.js fallback logic in place. Commit 769a9c4. DATABASE_URL GitHub secret still needs manual configuration in repo settings. |
-| TASK-62 | Fix 146 schema validation errors in subscription-billing canonical model | ✅ DONE | -- | -- | Fixed: events missing name/entityRef, conditions op→operator, scenarios/entities/lifecycle structure. validate.js ✓ PASS, gate PASS, codegen 19 files, tsc clean, 7 jest pass. Commit a6569cb |
-| TASK-63 | Document non-linear schema versioning in AGENTS.md (v2.1.0 shipped before v2.0.0) | ✅ DONE | -- | -- | AGENTS.md updated with non-linear versioning policy section. Commit fcfcd70 |
+| TASK-62 | Fix 146 schema validation errors in subscription-billing canonical model | ✅ DONE | -- | -- | Fixed: events missing name/entityRef, conditions op→operator, scenarios/entities/lifecycle structure. validate.js ✓ PASS, gate PASS, codegen 19 files, tsc clean, 7 jest pass. Commit a6569cb. Verified: 2026-03-06 (CHECK-2 PASS — both models validate 0 errors; CHECK-3 PASS — gate PASS locally) |
+| TASK-63 | Document non-linear schema versioning in AGENTS.md (v2.1.0 shipped before v2.0.0) | ✅ DONE | -- | -- | AGENTS.md updated with non-linear versioning policy section. Commit fcfcd70. Verified: 2026-03-06 (CHECK-8 PASS — AGENTS.md:311 section confirmed) |
