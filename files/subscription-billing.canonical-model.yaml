@@ -192,6 +192,19 @@ intents:
     glossaryRefs: [dunning, subscription]
     tags: [subscriptions, dunning, payments]
 
+  - id: view-subscription-details
+    name: View Subscription Details
+    description: >
+      Allow customers and administrators to view subscription information
+      including current status, billing cycle dates, and plan details.
+    status: approved
+    approvedBy: human
+    approvedAt: "2026-03-06"
+    version: "1.0"
+    priority: must
+    glossaryRefs: [subscription]
+    tags: [subscriptions, queries]
+
 # ─────────────────────────────────────────────────────────────────────────────
 # SCENARIOS
 # ─────────────────────────────────────────────────────────────────────────────
@@ -711,7 +724,7 @@ operations:
     inputMode: none
     outputMode: single
     outputEntity: subscription
-    intentRef: cancel-subscription
+    intentRef: view-subscription-details
     errorResponses:
       - { statusCode: 404, code: SUBSCRIPTION_NOT_FOUND }
     auth: { required: true, schemes: [bearer], roles: [customer, admin] }
@@ -726,7 +739,7 @@ operations:
     inputEntity: subscription
     outputMode: collection
     outputEntity: subscription
-    intentRef: cancel-subscription
+    intentRef: view-subscription-details
     pagination:
       strategy: cursor
       defaultSize: 20
