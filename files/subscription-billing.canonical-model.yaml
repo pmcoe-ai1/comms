@@ -1,3 +1,4 @@
+# yaml-language-server: $schema=files/canonical-model.schema.json
 # ─────────────────────────────────────────────────────────────────────────────
 # CANONICAL MODEL — subscription-billing
 # Schema version: v2.0.0
@@ -392,7 +393,7 @@ entities:
       - { id: current-period-start, name: currentPeriodStart, type: datetime, required: true, glossaryRef: billing-cycle }
       - { id: current-period-end, name: currentPeriodEnd, type: datetime, required: true, glossaryRef: billing-cycle }
       - { id: anchor-date, name: anchorDate, type: integer, required: true, immutable: true, validation: { min: 1, max: 28 }, glossaryRef: subscription-anchor-date }
-      - { id: dunning-attempts, name: dunningAttempts, type: integer, required: true, default: 0, validation: { min: 0, max: 3 }, glossaryRef: dunning }
+      - { id: dunning-attempts, name: dunningAttempts, type: integer, required: true, default: 0, validation: { min: 0, max: 4 }, glossaryRef: dunning }
       - { id: cancelled-at, name: cancelledAt, type: datetime, required: false, nullable: true }
       - { id: created-at, name: createdAt, type: datetime, required: true, immutable: true, systemField: true }
       - { id: updated-at, name: updatedAt, type: datetime, required: true, systemField: true }
