@@ -950,6 +950,26 @@ if (runTemplateGate) {
   fs.writeFileSync(filledPath, yaml.dump(updatedFilled, {
     indent: 2, lineWidth: 120, noRefs: true, quotingType: '"'
   }));
+
+  // BUG-011 fix: update _fill-manifest.json with gate result
+  const manifestPath = path.join(path.dirname(filledPath), '_fill-manifest.json');
+  if (fs.existsSync(manifestPath)) {
+    try {
+      const manifest = JSON.parse(fs.readFileSync(manifestPath, 'utf8'));
+      const ruleId = updatedFilled._meta?.ruleId;
+      if (manifest.templates && ruleId) {
+        const entry = manifest.templates.find(t => t.ruleId === ruleId);
+        if (entry) {
+          entry.gateResult = results.overall === 'PASS' ? 'pass' : 'fail';
+          entry.gateAt = new Date().toISOString();
+          fs.writeFileSync(manifestPath, JSON.stringify(manifest, null, 2));
+          console.log('Manifest updated with gate result for rule: ' + ruleId);
+        }
+      }
+    } catch (e) {
+      console.warn('Warning: could not update manifest:', e.message);
+    }
+  }
 }
 
 if (results.overall === 'PASS') {
