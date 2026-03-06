@@ -11,10 +11,13 @@
 // scenarioRefs: [dunning-retry-succeeds, dunning-exhausted-cancels-subscription]
 //
 // Canonical condition:
-
+//   AND [
+//     status eq "past-due",
+//     dunning-attempts lte 3,
+//   ]
 //
 // Canonical action:
-//   set dunning-attempts = {"$add":{"left":{"$field":"dunning-attempts"},"right":{"$value":1}}}
+//   set dunning-attempts = dunning-attempts add 1
 //
 // IMPLEMENT THIS STUB in: src/rules/handle-dunning-retry.ts
 // Do not modify this file. Changes here will be overwritten by codegen.

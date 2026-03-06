@@ -11,7 +11,10 @@
 // scenarioRefs: [active-subscription-cancelled, trialing-subscription-cancelled, expired-subscription-cannot-be-cancelled]
 //
 // Canonical condition:
-
+//   OR [
+//     status eq "trialing",
+//     status eq "active",
+//   ]
 //
 // Canonical action:
 //   set status = "cancelled"

@@ -12,10 +12,10 @@ _meta:
     - Fill only the slots in the "fill" section. Do not modify the "context" section.
   filledAt: "2026-03-05T03:07:26.881Z"
   filledBy: claude-sonnet-4-20250514
-  status: gate-failed-needs-refill
-  gateResult: FAIL
-  gateRunAt: "2026-03-06T05:48:52.363Z"
-  gatePass1: false
+  status: gate-passed-ready-for-codegen
+  gateResult: PASS
+  gateRunAt: "2026-03-06T11:21:45.918Z"
+  gatePass1: true
   gatePass2: true
   gatePass3: true
   gatePass4: true
@@ -181,5 +181,5 @@ fill:
     value: 1
   action:
     type: call-operation
-    operation: validate-stock-availability
+    operation: add-order-item
   elseAction: null
