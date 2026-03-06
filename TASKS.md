@@ -1,6 +1,6 @@
 # DKCE + FABRIC Task List
 Generated from: PLAN.md, FABRIC.docx, BUGS.md, direct file verification
-Last updated: 2026-03-06T07:00:00Z
+Last updated: 2026-03-06T08:00:00Z
 ---
 ## How to use this file
 This is the authoritative task tracker for the DKCE + FABRIC project.
@@ -100,7 +100,7 @@ These items need further verification before status can be confirmed:
 |---|---|---|
 | VERIFY-01 | example.canonical-model.yaml meta.version is 1.0.0 | RESOLVED — meta.version is intentionally 1.0.0. Schema version ≠ model version is documented in file header. Version bump policy is undefined — see VERIFY-03. |
 | VERIFY-02 | subscription-billing.canonical-model.yaml meta.version | RESOLVED — meta.version is 1.0.0 on both models. See VERIFY-03 for version bump policy gap. |
-| VERIFY-03 | meta.version policy undefined | Neither PLAN.md nor AGENTS.md defines when meta.version should be bumped on a canonical model. Both models sit at 1.0.0 despite content changes during bug sweep. prevHash is null on both. When chain.js is built (TASK-16), it will hash current file content — but without a version bump policy, the chain cannot distinguish model states across sessions. A version bump policy must be defined before TASK-16 is built. Add policy to AGENTS.md. |
+| VERIFY-03 | meta.version policy undefined | RESOLVED — Version bump policy added to AGENTS.md lines 301-309. Both models bumped to 1.1.0 with changeReason set. example model validates; subscription-billing has 167 pre-existing schema errors (not caused by version bump). |
 ---
 ## Critical paths
 **Critical path to DKCE complete (TASK-19):**
