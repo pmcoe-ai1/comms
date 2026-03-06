@@ -91,12 +91,12 @@ glossary:
     term: Dunning
     definition: >
       The process of retrying a failed payment on a declining schedule before
-      marking the subscription as cancelled. Maximum 3 retry attempts over
+      marking the subscription as cancelled. Maximum 4 retry attempts over
       7 days. If all retries fail, subscription moves to cancelled.
     precision:
       type: range
       min: 0
-      max: 3
+      max: 4
       unit: attempts
     conceptVersion: "1.0"
 
@@ -182,7 +182,7 @@ intents:
     name: Handle Failed Payment with Dunning
     description: >
       When a subscription payment fails, move to past-due status and schedule
-      a retry. Maximum 3 retry attempts. If all retries fail, cancel the
+      a retry. Maximum 4 retry attempts. If all retries fail, cancel the
       subscription. If a retry succeeds, return to active.
     status: approved
     approvedBy: jane.smith
