@@ -1,6 +1,6 @@
 # DKCE + FABRIC Task List
 Generated from: PLAN.md, FABRIC.docx, BUGS.md, direct file verification
-Last updated: 2026-03-06T20:00:00Z
+Last updated: 2026-03-06T21:00:00Z
 ---
 ## How to use this file
 This is the authoritative task tracker for the DKCE + FABRIC project.
@@ -55,6 +55,15 @@ Rules:
 | TASK-51 | Fix BUG-012 — remove dead code condition.then from files/template-generator.js line 287 | ✅ DONE | — | — | Dead code removed. template-generator.js exit 0. Commit 436e600 |
 | TASK-52 | Fix DESIGN-002 remainder — add yaml-language-server directive to subscription-billing.canonical-model.yaml | ✅ DONE | — | — | Directive added at line 1. Matches example model format. Commit c452bb3 |
 ---
+---
+## AUDIT-02 Tasks — discovered by FABRIC.md vs source code verification audit (2026-03-06)
+| ID | Task | Status | Depends on | Blocked on | Notes |
+|---|---|---|---|---|---|
+| TASK-53 | Add expectedResult to all 11 scenarios in subscription-billing.canonical-model.yaml — required for gate Pass 2 to evaluate subscription scenario outcomes | ✗ NOT DONE | — | — | — |
+| TASK-54 | Add generated/operations/ directory to codegen output — generate typed operation stub files per FABRIC §8 artifact list | ✗ NOT DONE | — | — | — |
+| TASK-55 | Fix CI gate job — run gate.js against filled templates (Pass 1-4), not just canonical model validation | ✗ NOT DONE | TASK-53 | — | — |
+| TASK-56 | Add template-generator stage to CI pipeline — run before fill stage | ✗ NOT DONE | — | — | — |
+
 ## FABRIC Phase 2 Tasks
 ### Sprint A — FABRIC foundation
 | ID | Task | Status | Depends on | Blocked on | Notes |
@@ -112,12 +121,15 @@ These items need further verification before status can be confirmed:
 | VERIFY-03 | meta.version policy undefined | RESOLVED — Version bump policy added to AGENTS.md lines 301-309. Both models bumped to 1.1.0 with changeReason set. example model validates; subscription-billing has 167 pre-existing schema errors (not caused by version bump). |
 | VERIFY-04 | subscription-billing.canonical-model.yaml fails validate.js with 167 schema errors | Pre-existing structural mismatches (missing coverageType, glossaryRef, wrong lifecycle field names). Surfaced by VERIFY-03. Does not block pipeline (fill/gate/codegen work despite it). Must be fixed before schema validation can be enforced in CI. |
 | VERIFY-05 | codegen.js UNGATED cleanup deletes stubs imported by src/ | RESOLVED — FIX-05 applied: codegen.js now only deletes stubs when canonical model has null condition/action. Commit b43e6e1. |
+| VERIFY-06 | subscription-billing.canonical-model.yaml has 0 expectedResult fields on 11 scenarios | Gap: gate Pass 2 cannot evaluate subscription scenario outcomes. Confirmed: grep -c expectedResult files/subscription-billing.canonical-model.yaml = 0. Must add expectedResult before CI gate can enforce Pass 2 for subscription. See TASK-53. |
+| VERIFY-07 | CI gate job runs model validation only — filled template gate (Pass 1-4) not exercised in CI | dkce.yml gate job runs node gate.js --model. Validates canonical model (Pass 3+4). Pass 1 structural and Pass 2 scenario evaluation against filled templates are absent from CI. See TASK-55. |
 ---
 ## Audit log
 | ID | Date | Scope | Result | Notes |
 |---|---|---|---|---|
 | AUDIT-01 | 2026-03-06 | BUGS.md vs source code — all 34 bugs + 3 DESIGN issues | 30 CONFIRMED, 3 PARTIAL (BUG-011, BUG-018, DESIGN-002), 2 NOT FOUND (BUG-012, BUG-020) | New tasks TASK-48 through TASK-52 added for unresolved findings. No regressions detected. |
 | AUDIT-01-FIX | 2026-03-06 | Fix all 5 AUDIT-01 findings | 5/5 FIXED | TASK-48 (c452bb3), TASK-49 (66c0f7d), TASK-50 (22d05c6), TASK-51 (436e600), TASK-52 (c452bb3). 64 tests pass, tsc clean. |
+| AUDIT-02 | 2026-03-06 | FABRIC.md §4,§6,§8,§9,§10,§12-§15,§17,§18,§20,§21 vs source code — 70 specs checked | 51 EXISTS, 3 MISSING, 4 DIVERGES | MISSING: generated/operations/ (§8, TASK-54), catalog-info.yaml (§8), runtime enforcement (§9 Phase 2). DIVERGES: subscription 0 expectedResult (VERIFY-06, TASK-53), CI gate Pass 1-2 gap (VERIFY-07, TASK-55), CI missing template-generator (TASK-56), CI deploy-gate chain gap. |
 ---
 ## Critical paths
 **Critical path to DKCE complete (TASK-19):**
