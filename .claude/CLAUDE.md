@@ -46,10 +46,13 @@ After completing any task, in this exact order:
 4. Update the `Last updated` date at the top of TASKS.md
 5. If the completed task unblocks a dependent task, update that
    task's blocked status accordingly
-6. Commit and push TASKS.md immediately:
+6. Commit and push TASKS.md to the comms repo immediately:
    git add TASKS.md
    git commit -m "TASK-XX complete — <one line description>"
-   git push origin main
+   git push comms main
+   The comms repo (https://github.com/pmcoe-ai1/comms) is the
+   single source of truth for task status. Do not push TASKS.md
+   to origin. Push to comms only.
 7. Report back with this exact line:
    `TASKS.md updated: TASK-XX marked ✅ DONE — verified at <file>:<line> — pushed to main`
 
