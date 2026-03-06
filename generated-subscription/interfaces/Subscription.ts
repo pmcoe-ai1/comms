@@ -1,12 +1,12 @@
 // ─────────────────────────────────────────────────────────────────────────────
 // GENERATED FILE — do not edit manually.
-// Source: canonical-model.yaml v1.0.0
+// Source: canonical-model.yaml v1.1.0
 // Generator: codegen.js
 // Regenerate: node codegen.js example.canonical-model.yaml
 // ─────────────────────────────────────────────────────────────────────────────
 
 // intentRef: multiple
-// canonicalModelVersion: 1.0.0
+// canonicalModelVersion: 1.1.0
 // entityRef: subscription
 
 import type { SubscriptionStatus } from './enums';
@@ -20,7 +20,7 @@ export interface Subscription {
   currentPeriodStart: Date; // datetime
   currentPeriodEnd: Date; // datetime
   readonly anchorDate: number; // integer, immutable, validation: {min:1, max:28}
-  dunningAttempts: number; // integer, validation: {min:0, max:4}, default: 0
+  dunningAttempts: number; // integer, validation: {min:0, max:3}
   cancelledAt: Date | null; // datetime, nullable
   readonly createdAt: Date; // datetime, immutable, system
   readonly updatedAt: Date; // datetime, system
@@ -34,7 +34,7 @@ export interface CreateSubscriptionInput {
   currentPeriodStart: Date;
   currentPeriodEnd: Date;
   anchorDate: number;
-  dunningAttempts?: number;
+  dunningAttempts: number;
   cancelledAt?: Date | null;
   // status omitted — set by lifecycle initialState on creation
   // use transitionSubscriptionStatus() for all subsequent state changes

@@ -1,12 +1,12 @@
 // ─────────────────────────────────────────────────────────────────────────────
 // GENERATED FILE — do not edit manually.
-// Source: canonical-model.yaml v1.0.0
+// Source: canonical-model.yaml v1.1.0
 // Generator: codegen.js
 // Regenerate: node codegen.js example.canonical-model.yaml
 // ─────────────────────────────────────────────────────────────────────────────
 
 // intentRef: convert-trial-to-active
-// canonicalModelVersion: 1.0.0
+// canonicalModelVersion: 1.1.0
 // entityRef: subscription
 // scenarioRefs: [trial-converts-to-active, trial-not-converted-if-cancelled]
 //
@@ -28,5 +28,5 @@ import type { Subscription } from '../interfaces/Subscription';
 export type ConvertTrialOnRenewalFn = (subscription: Subscription) => Subscription;
 
 // The implementation must satisfy these scenarios:
-// ✓ trial-converts-to-active                 — status=trialing, trial-ends-at=2025-01-01T00:00:00Z
-// ✓ trial-not-converted-if-cancelled         — status=cancelled
+// ✓ trial-converts-to-active                
+// ✓ trial-not-converted-if-cancelled        

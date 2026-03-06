@@ -1,16 +1,5 @@
 {
-  "generatedAt": "2026-03-05T12:28:51.814Z",
-  "canonicalModelVersion": "1.0.0",
-  "gapFlags": [
-    {
-      "type": "UNGATED_RULE",
-      "ruleId": "activate-on-trial-start",
-      "entityRef": "subscription",
-      "intentRef": "activate-trial-subscription",
-      "currentStatus": "gate-failed-needs-refill",
-      "filledTemplate": "templates-subscription/activate-on-trial-start.filled.yaml",
-      "message": "Filled template has not passed the enforcement gate. Current status: gate-failed-needs-refill",
-      "resolution": "Run: node gate.js templates-subscription/activate-on-trial-start.filled.yaml --model <canonical-model.yaml> then re-run codegen."
-    }
-  ]
+  "generatedAt": "2026-03-06T07:42:54.362Z",
+  "canonicalModelVersion": "1.1.0",
+  "gapFlags": []
 }

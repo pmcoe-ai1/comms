@@ -73,6 +73,22 @@ const modelRaw = fs.readFileSync(modelPath, 'utf8');
 const model = yaml.load(modelRaw);
 const version = model.meta.version;
 
+// ── Lifecycle field normalization (compat shim) ──────────────────────────────────────
+// Some canonical models use field/initial instead of statusField/initialState.
+// Normalize both to the standard schema form before codegen runs.
+if (model.entities) {
+  for (const entity of model.entities) {
+    if (entity.lifecycle) {
+      if (!entity.lifecycle.statusField && entity.lifecycle.field) {
+        entity.lifecycle.statusField = entity.lifecycle.field;
+      }
+      if (!entity.lifecycle.initialState && entity.lifecycle.initial) {
+        entity.lifecycle.initialState = entity.lifecycle.initial;
+      }
+    }
+  }
+}
+
 // ─── Tracking ────────────────────────────────────────────────────────────────
 
 const gapFlags = [];
@@ -1046,8 +1062,30 @@ function generateRuleStubs() {
     const scenarioRefs = rule.scenarioRefs || [];
 
     // ── Change A: block stub generation for unfilled rules ──
-    const conditionNull = rule.condition === null || rule.condition === undefined;
-    const actionNull = rule.action === null || rule.action === undefined;
+    let conditionNull = rule.condition === null || rule.condition === undefined;
+    let actionNull = rule.action === null || rule.action === undefined;
+
+    // If condition/action are null, check if a gate-passed filled template provides them
+    if ((conditionNull || actionNull) && filledDirs.length > 0) {
+      const templateInfo = filledTemplateStatus[ruleId];
+      if (templateInfo && templateInfo.status === 'gate-passed-ready-for-codegen') {
+        try {
+          const filledContent = yaml.load(fs.readFileSync(templateInfo.file, 'utf8'));
+          if (filledContent && filledContent.fill) {
+            if (conditionNull && filledContent.fill.condition) {
+              rule.condition = filledContent.fill.condition;
+              conditionNull = false;
+            }
+            if (actionNull && filledContent.fill.action) {
+              rule.action = filledContent.fill.action;
+              actionNull = false;
+            }
+          }
+        } catch (e) {
+          console.warn(`Warning: could not read filled template for ${ruleId}: ${e.message}`);
+        }
+      }
+    }
 
     if (conditionNull || actionNull) {
       // Record gap flag — do NOT generate stub

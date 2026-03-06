@@ -1,6 +1,6 @@
 // ─────────────────────────────────────────────────────────────────────────────
 // GENERATED FILE — do not edit manually.
-// Source: canonical-model.yaml v1.0.0
+// Source: canonical-model.yaml v1.1.0
 // Generator: codegen.js
 // Regenerate: node codegen.js example.canonical-model.yaml
 // ─────────────────────────────────────────────────────────────────────────────
@@ -40,15 +40,15 @@ enum BillingRecordStatus {
 }
 
 /// intentRef: activate-trial-subscription
-/// canonicalModelVersion: 1.0.0
+/// canonicalModelVersion: 1.1.0
 /// entityRef: plan
 model Plan {
   id              String  @id @default(uuid())
   name            String
   price           Decimal  @db.Decimal(10, 2)
   interval        PlanInterval
-  trialDays       Int  @default(0)
-  isActive        Boolean  @default(true)
+  trialDays       Int
+  isActive        Boolean
   createdAt       DateTime  @default(now())
 
   subscriptions   Subscription[]
@@ -56,7 +56,7 @@ model Plan {
 }
 
 /// intentRef: multiple
-/// canonicalModelVersion: 1.0.0
+/// canonicalModelVersion: 1.1.0
 /// entityRef: subscription
 model Subscription {
   id              String  @id @default(uuid())
@@ -67,7 +67,7 @@ model Subscription {
   currentPeriodStart DateTime
   currentPeriodEnd DateTime
   anchorDate      Int
-  dunningAttempts Int  @default(0)
+  dunningAttempts Int
   cancelledAt     DateTime?
   createdAt       DateTime  @default(now())
   updatedAt       DateTime  @updatedAt
@@ -82,7 +82,7 @@ model Subscription {
 }
 
 /// intentRef: billing-record
-/// canonicalModelVersion: 1.0.0
+/// canonicalModelVersion: 1.1.0
 /// entityRef: billing-record
 model BillingRecord {
   id              String  @id @default(uuid())
@@ -92,7 +92,7 @@ model BillingRecord {
   status          BillingRecordStatus
   periodStart     DateTime
   periodEnd       DateTime
-  attemptNumber   Int  @default(1)
+  attemptNumber   Int
   createdAt       DateTime  @default(now())
 
   subscription    Subscription  @relation(fields: [subscriptionId], references: [id])
@@ -100,7 +100,7 @@ model BillingRecord {
 }
 
 /// intentRef: customer
-/// canonicalModelVersion: 1.0.0
+/// canonicalModelVersion: 1.1.0
 /// entityRef: customer
 model Customer {
   id              String  @id @default(uuid())

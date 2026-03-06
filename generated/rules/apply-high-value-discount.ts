@@ -1,12 +1,12 @@
 // ─────────────────────────────────────────────────────────────────────────────
 // GENERATED FILE — do not edit manually.
-// Source: canonical-model.yaml v1.0.0
+// Source: canonical-model.yaml v1.1.0
 // Generator: codegen.js
 // Regenerate: node codegen.js example.canonical-model.yaml
 // ─────────────────────────────────────────────────────────────────────────────
 
 // intentRef: reward-high-value-orders
-// canonicalModelVersion: 1.0.0
+// canonicalModelVersion: 1.1.0
 // entityRef: order
 // scenarioRefs: [high-value-discount-applied, already-discounted-not-re-discounted, no-discount-below-threshold]
 //
@@ -20,7 +20,7 @@
 //
 // Canonical action:
 //   set discount = total multiply 0.1
-//   then: emit-event order.discount-applied
+//     emit-event order.discount-applied
 //
 // IMPLEMENT THIS STUB in: src/rules/apply-high-value-discount.ts
 // Do not modify this file. Changes here will be overwritten by codegen.

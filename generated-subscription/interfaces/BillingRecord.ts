@@ -1,12 +1,12 @@
 // ─────────────────────────────────────────────────────────────────────────────
 // GENERATED FILE — do not edit manually.
-// Source: canonical-model.yaml v1.0.0
+// Source: canonical-model.yaml v1.1.0
 // Generator: codegen.js
 // Regenerate: node codegen.js example.canonical-model.yaml
 // ─────────────────────────────────────────────────────────────────────────────
 
 // intentRef: billing-record
-// canonicalModelVersion: 1.0.0
+// canonicalModelVersion: 1.1.0
 // entityRef: billing-record
 
 import type { BillingRecordType, BillingRecordStatus } from './enums';
@@ -19,7 +19,7 @@ export interface BillingRecord {
   status: BillingRecordStatus; // enum
   readonly periodStart: Date; // datetime, immutable
   readonly periodEnd: Date; // datetime, immutable
-  attemptNumber: number; // integer, validation: {min:1, max:3}, default: 1
+  attemptNumber: number; // integer, validation: {min:1, max:3}
   readonly createdAt: Date; // datetime, immutable, system
 }
 
@@ -31,7 +31,7 @@ export interface CreateBillingRecordInput {
   status: BillingRecordStatus;
   periodStart: Date;
   periodEnd: Date;
-  attemptNumber?: number;
+  attemptNumber: number;
 }
 
 // Input type for updating a BillingRecord (only mutable, non-system fields)

@@ -1,6 +1,6 @@
 // ─────────────────────────────────────────────────────────────────────────────
 // GENERATED FILE — do not edit manually.
-// Source: canonical-model.yaml v1.0.0
+// Source: canonical-model.yaml v1.1.0
 // Generator: codegen.js
 // Regenerate: node codegen.js example.canonical-model.yaml
 // ─────────────────────────────────────────────────────────────────────────────
@@ -25,7 +25,7 @@ enum OrderStatus {
 }
 
 /// intentRef: multiple
-/// canonicalModelVersion: 1.0.0
+/// canonicalModelVersion: 1.1.0
 /// entityRef: order
 model Order {
   id              String  @id @default(uuid())
@@ -48,7 +48,7 @@ model Order {
 }
 
 /// intentRef: customer
-/// canonicalModelVersion: 1.0.0
+/// canonicalModelVersion: 1.1.0
 /// entityRef: customer
 model Customer {
   id              String  @id @default(uuid())
@@ -60,7 +60,7 @@ model Customer {
 }
 
 /// intentRef: product
-/// canonicalModelVersion: 1.0.0
+/// canonicalModelVersion: 1.1.0
 /// entityRef: product
 model Product {
   id              String  @id @default(uuid())
@@ -75,7 +75,7 @@ model Product {
 }
 
 /// intentRef: prevent-oversell
-/// canonicalModelVersion: 1.0.0
+/// canonicalModelVersion: 1.1.0
 /// entityRef: order-item
 model OrderItem {
   id              String  @id @default(uuid())

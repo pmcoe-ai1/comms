@@ -1,6 +1,6 @@
 # ─────────────────────────────────────────────────────────────────────────────
 # GENERATED FILE — do not edit manually.
-# Source: canonical-model.yaml v1.0.0
+# Source: canonical-model.yaml v1.1.0
 # Generator: codegen.js
 # Regenerate: node codegen.js example.canonical-model.yaml
 # ─────────────────────────────────────────────────────────────────────────────
@@ -8,7 +8,7 @@
 openapi: 3.1.0
 info:
   title: subscription-billing API
-  version: 1.0.0
+  version: 1.1.0
   description: Subscription billing domain — plans, subscriptions, billing cycles, payments.
 paths:
   /customers/{customerId}/subscriptions:
@@ -335,10 +335,8 @@ components:
           type: integer
           minimum: 0
           maximum: 90
-          default: 0
         isActive:
           type: boolean
-          default: true
         createdAt:
           type: string
           format: date-time
@@ -368,14 +366,13 @@ components:
           type: integer
           minimum: 0
           maximum: 90
-          default: 0
         isActive:
           type: boolean
-          default: true
       required:
         - name
         - price
         - interval
+        - isActive
     Subscription:
       type: object
       properties:
@@ -413,8 +410,7 @@ components:
         dunningAttempts:
           type: integer
           minimum: 0
-          maximum: 4
-          default: 0
+          maximum: 3
         cancelledAt:
           type: string
           format: date-time
@@ -470,8 +466,7 @@ components:
         dunningAttempts:
           type: integer
           minimum: 0
-          maximum: 4
-          default: 0
+          maximum: 3
         cancelledAt:
           type: string
           format: date-time
@@ -483,6 +478,7 @@ components:
         - currentPeriodStart
         - currentPeriodEnd
         - anchorDate
+        - dunningAttempts
     BillingRecord:
       type: object
       properties:
@@ -519,7 +515,6 @@ components:
           type: integer
           minimum: 1
           maximum: 3
-          default: 1
         createdAt:
           type: string
           format: date-time
@@ -566,7 +561,6 @@ components:
           type: integer
           minimum: 1
           maximum: 3
-          default: 1
       required:
         - subscriptionId
         - type
@@ -574,6 +568,7 @@ components:
         - status
         - periodStart
         - periodEnd
+        - attemptNumber
     Customer:
       type: object
       properties:
