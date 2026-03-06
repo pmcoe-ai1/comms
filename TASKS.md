@@ -1,6 +1,6 @@
 # DKCE + FABRIC Task List
 Generated from: PLAN.md, FABRIC.docx, BUGS.md, direct file verification
-Last updated: 2026-03-06T13:30:00Z
+Last updated: 2026-03-06T18:00:00Z
 ---
 ## How to use this file
 This is the authoritative task tracker for the DKCE + FABRIC project.
@@ -45,6 +45,15 @@ Rules:
 | TASK-20 | Write signal-collector.js | ✗ NOT DONE | TASK-19 | — | Week 6+ |
 | TASK-21 | Write pattern-analyser.js — Claude API | ✗ NOT DONE | TASK-20 | — | Week 6+ |
 | TASK-22 | Write confidence-score.js | ✗ NOT DONE | TASK-20 | — | Week 6+ |
+---
+## AUDIT-01 Tasks — discovered by BUGS.md vs source code verification audit (2026-03-06)
+| ID | Task | Status | Depends on | Blocked on | Notes |
+|---|---|---|---|---|---|
+| TASK-48 | Fix BUG-018 remainder — update dunning-attempts FIELD validation max from 3 to 4 at subscription-billing.canonical-model.yaml line 382 | ✗ NOT DONE | — | — | AUDIT-01: Glossary precision.max fixed (line 99), but field validation max still 3 (line 382). Requires canonical model edit. |
+| TASK-49 | Fix BUG-020 — update get-subscription (line 714) and list-subscriptions (line 729) intentRef from cancel-subscription to a query intent in subscription-billing.canonical-model.yaml | ✗ NOT DONE | — | — | AUDIT-01: Both read operations still have intentRef: cancel-subscription. Requires adding a view-subscription or query-subscription intent to the model. Canonical model edit. |
+| TASK-50 | Fix BUG-011 remainder — gate.js does not update _fill-manifest.json with gateResult after gate passes | ✗ NOT DONE | — | — | AUDIT-01: fill.js updates manifest (lines 406-412). gate.js has no manifest references — does not write gateResult. |
+| TASK-51 | Fix BUG-012 — remove dead code condition.then from files/template-generator.js line 287 | ✗ NOT DONE | — | — | AUDIT-01: Dead code still present. const declaredEvents = (rule.condition?.then or [])... condition has no then property. Trivial removal. |
+| TASK-52 | Fix DESIGN-002 remainder — add yaml-language-server directive to subscription-billing.canonical-model.yaml | ✗ NOT DONE | — | — | AUDIT-01: Directive present in example.canonical-model.yaml line 1 but missing in subscription-billing model. |
 ---
 ## FABRIC Phase 2 Tasks
 ### Sprint A — FABRIC foundation
@@ -102,7 +111,12 @@ These items need further verification before status can be confirmed:
 | VERIFY-02 | subscription-billing.canonical-model.yaml meta.version | RESOLVED — meta.version is 1.0.0 on both models. See VERIFY-03 for version bump policy gap. |
 | VERIFY-03 | meta.version policy undefined | RESOLVED — Version bump policy added to AGENTS.md lines 301-309. Both models bumped to 1.1.0 with changeReason set. example model validates; subscription-billing has 167 pre-existing schema errors (not caused by version bump). |
 | VERIFY-04 | subscription-billing.canonical-model.yaml fails validate.js with 167 schema errors | Pre-existing structural mismatches (missing coverageType, glossaryRef, wrong lifecycle field names). Surfaced by VERIFY-03. Does not block pipeline (fill/gate/codegen work despite it). Must be fixed before schema validation can be enforced in CI. |
-| VERIFY-05 | codegen.js UNGATED cleanup deletes stubs imported by src/ | When codegen runs for a model with UNGATED rules, it deletes generated/rules/*.ts stubs. If src/rules/*.ts imports from a deleted stub, tsc breaks. Surfaced by TASK-14 (had to restore check-stock-on-add-item.ts from git). Design issue — codegen should not delete stubs that have downstream dependents. |
+| VERIFY-05 | codegen.js UNGATED cleanup deletes stubs imported by src/ | RESOLVED — FIX-05 applied: codegen.js now only deletes stubs when canonical model has null condition/action. Commit b43e6e1. |
+---
+## Audit log
+| ID | Date | Scope | Result | Notes |
+|---|---|---|---|---|
+| AUDIT-01 | 2026-03-06 | BUGS.md vs source code — all 34 bugs + 3 DESIGN issues | 30 CONFIRMED, 3 PARTIAL (BUG-011, BUG-018, DESIGN-002), 2 NOT FOUND (BUG-012, BUG-020) | New tasks TASK-48 through TASK-52 added for unresolved findings. No regressions detected. |
 ---
 ## Critical paths
 **Critical path to DKCE complete (TASK-19):**
