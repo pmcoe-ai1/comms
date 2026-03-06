@@ -298,6 +298,16 @@ export interface Order {
 }
 ```
 
+## Version bump policy
+
+meta.version follows semver:
+
+- Patch (1.0.1): doc/glossary wording only
+- Minor (1.1.0): new fields/rules/operations/scenarios — backward compatible
+- Major (2.0.0): removed/renamed/retyped fields, changed conditions/actions — breaking
+
+On every bump: update meta.version, set meta.changeReason (one line). prevHash is set by chain.js — never manual. Version must be bumped before committing any canonical model change.
+
 ---
 
 ## What to build: codegen.js

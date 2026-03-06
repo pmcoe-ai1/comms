@@ -1,7 +1,7 @@
 # ─────────────────────────────────────────────────────────────────────────────
 # CANONICAL MODEL — subscription-billing
 # Schema version: v2.0.0
-# Meta version:   1.0.0
+# Meta version:   1.1.0
 # Domain: subscription billing
 #
 # Exercises: recurring lifecycle, trial periods, billing cycles, proration,
@@ -12,7 +12,7 @@
 
 meta:
   id: "a1b2c3d4-e5f6-7890-abcd-ef1234567890"
-  version: "1.0.0"
+  version: "1.1.0"
   status: approved
   createdAt: "2026-03-05T09:00:00Z"
   approvedBy: "jane.smith"
@@ -21,7 +21,7 @@ meta:
   domain: "subscription-billing"
   owners: ["jane.smith", "tom.baker"]
   prevHash: null
-  changeReason: null
+  changeReason: "TASK-01a/01b dunning max 4"
 
 # ─────────────────────────────────────────────────────────────────────────────
 # GLOSSARY
@@ -786,7 +786,7 @@ integrationContracts:
   - id: subscription-payment-contract
     name: Subscription–Payment Integration
     description: Billing service calls payment.charge during subscription renewal and dunning.
-    version: "1.0.0"
+    version: "1.1.0"
     status: active
     producer:
       id: subscription-service

@@ -2,7 +2,7 @@
 # ─────────────────────────────────────────────────────────────────────────────
 # CANONICAL MODEL — example
 # Schema version: v1.2.0
-# Meta version:   1.0.0  (schema version ≠ model version)
+# Meta version:   1.1.0  (schema version ≠ model version)
 # Domain: order management
 #
 # Exercises: ExpressionValue cross-field computation, uuid+refEntity FK pattern,
@@ -14,7 +14,7 @@
 
 meta:
   id: "550e8400-e29b-41d4-a716-446655440000"
-  version: "1.0.0"
+  version: "1.1.0"
   status: approved
   createdAt: "2026-03-04T09:00:00Z"
   approvedBy: "jane.smith"
@@ -23,7 +23,7 @@ meta:
   domain: "order-management"
   owners: ["jane.smith", "tom.baker"]
   prevHash: null
-  changeReason: null
+  changeReason: "Bug sweep, TASK-02 INVALID_QUANTITY, knownVectors"
 
 # ─────────────────────────────────────────────────────────────────────────────
 # GLOSSARY — #8 fix: glossaryRef added for every domain field
@@ -1072,7 +1072,7 @@ integrationContracts:
   - id: order-payment-contract
     name: Order–Payment Integration
     description: Payments service calls confirmOrder after successful payment.
-    version: "1.0.0"
+    version: "1.1.0"
     status: active
     producer:
       id: order-service
