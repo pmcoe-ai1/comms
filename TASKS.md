@@ -22,8 +22,8 @@ Rules:
 ## DKCE Completion Tasks
 | ID | Task | Status | Depends on | Blocked on | Notes |
 |---|---|---|---|---|---|
-| TASK-01a | Update dunning glossary line 76 — change "Maximum 3 retry attempts" to "Maximum 4 retry attempts" in subscription-billing.canonical-model.yaml | ✗ NOT DONE | — | — | subscription-billing.canonical-model.yaml line 76 says 'Maximum 3 retry attempts'. Must be updated to 4. Verified by direct file read. |
-| TASK-01b | Update dunning glossary line 80 — change precision.max from 3 to 4 in subscription-billing.canonical-model.yaml | ✗ NOT DONE | — | — | subscription-billing.canonical-model.yaml line 80 says precision.max: 3. Must be updated to 4. Verified by direct file read. |
+| TASK-01a | Update dunning glossary line 94 — change "Maximum 3 retry attempts" to "Maximum 4 retry attempts" in subscription-billing.canonical-model.yaml | ✅ DONE | — | — | subscription-billing.canonical-model.yaml line 94 updated to "Maximum 4 retry attempts" |
+| TASK-01b | Update dunning glossary line 99 — change precision.max from 3 to 4 in subscription-billing.canonical-model.yaml | ✅ DONE | — | — | subscription-billing.canonical-model.yaml line 99 updated to precision.max: 4 |
 | TASK-02 | Add INVALID_QUANTITY to add-order-item errorResponses + knownVectors cross-entity documentation | ✅ DONE | — | — | Verified: line 896 and lines 1104-1145 |
 | TASK-03 | Extend gate.js Pass 1 with glossary precision checker | ✗ NOT DONE | — | — | Gap 5 |
 | TASK-04 | Write fast-check property-based tests for numeric condition boundaries | ✗ NOT DONE | — | — | Gap 9 |
