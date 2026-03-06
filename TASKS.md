@@ -55,6 +55,15 @@ Rules:
 | TASK-51 | Fix BUG-012 — remove dead code condition.then from files/template-generator.js line 287 | ✅ DONE | — | — | Dead code removed. template-generator.js exit 0. Commit 436e600 |
 | TASK-52 | Fix DESIGN-002 remainder — add yaml-language-server directive to subscription-billing.canonical-model.yaml | ✅ DONE | — | — | Directive added at line 1. Matches example model format. Commit c452bb3 |
 ---
+---
+## AUDIT-02 Tasks — discovered by FABRIC.md vs source code verification audit (2026-03-06)
+| ID | Task | Status | Depends on | Blocked on | Notes |
+|---|---|---|---|---|---|
+| TASK-53 | Add expectedResult to all 11 scenarios in subscription-billing.canonical-model.yaml — required for gate Pass 2 to evaluate subscription scenario outcomes | ✗ NOT DONE | — | — | — |
+| TASK-54 | Add generated/operations/ directory to codegen output — generate typed operation stub files per FABRIC §8 artifact list | ✗ NOT DONE | — | — | — |
+| TASK-55 | Fix CI gate job — run gate.js against filled templates (Pass 1-4), not just canonical model validation | ✗ NOT DONE | TASK-53 | — | — |
+| TASK-56 | Add template-generator stage to CI pipeline — run before fill stage | ✗ NOT DONE | — | — | — |
+
 ## FABRIC Phase 2 Tasks
 ### Sprint A — FABRIC foundation
 | ID | Task | Status | Depends on | Blocked on | Notes |
