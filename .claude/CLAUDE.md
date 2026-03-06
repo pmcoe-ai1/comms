@@ -12,6 +12,12 @@ and its verification evidence. This conversation and Claude Code stay
 aligned through TASKS.md. If TASKS.md is not updated, work is invisible
 to the next session and will be repeated.
 
+The GitHub API URL for reading TASKS.md from Claude conversations is:
+https://api.github.com/repos/pmcoe-ai1/dkce-prototype/contents/TASKS.md
+This URL must be provided at the start of every new conversation with
+Claude so Claude can fetch current task status directly from GitHub.
+The response is base64-encoded — Claude will decode it automatically.
+
 ---
 
 ## 2. Start of every session — mandatory, no exceptions
