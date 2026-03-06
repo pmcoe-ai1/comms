@@ -1,6 +1,6 @@
 # DKCE + FABRIC Task List
 Generated from: PLAN.md, FABRIC.docx, BUGS.md, direct file verification
-Last updated: 2026-03-07T01:30:00Z
+Last updated: 2026-03-07T01:45:00Z
 ---
 ## How to use this file
 This is the authoritative task tracker for the DKCE + FABRIC project.
@@ -143,4 +143,4 @@ TASK-19 ✅ → TASK-23 → TASK-24 → TASK-25
 | TASK-63 | Document non-linear schema versioning in AGENTS.md (v2.1.0 shipped before v2.0.0) | ✅ DONE | -- | -- | AGENTS.md updated with non-linear versioning policy section. Commit fcfcd70 |
 | TASK-64 | Fix check-stock-on-add-item.filled.yaml — action references non-existent operation validate-stock-availability | ✅ DONE | -- | -- | Fixed: fill.action changed to call-operation: add-order-item. Gate PASS (all 4 passes). tsc clean. 7 scenario tests pass. Commit 6e3aba9. Verified: templates/check-stock-on-add-item.filled.yaml:184 |
 | TASK-65 | Fix gate.js Pass 1 — initialState not recognized as valid lifecycle target state | ✅ DONE (with regression) | -- | -- | gate.js:327-328 — added initialState to validNextStates set. Intended case works (activate-on-trial-start PASS). REGRESSION: initialState added unconditionally — allows active→trialing when source state is known. See TASK-66. Commit 23c2db7. Verified: 2026-03-07. |
-| TASK-66 | gate.js initialState added unconditionally — allows invalid transitions when source state is known | ✅ DONE | -- | -- | Moved initialState addition inside else block (no-source-state path). Regression test: active→trialing correctly rejected. activate-on-trial-start still PASS. tsc clean, 7 jest pass. Commit e8c0979. Verified: gate.js:327-328 now inside else block at line 323-329. |
+| TASK-66 | gate.js initialState added unconditionally — allows invalid transitions when source state is known | ✅ DONE | -- | -- | Moved initialState addition inside else block (no-source-state path). Regression test: active→trialing correctly rejected. activate-on-trial-start still PASS. tsc clean, 64 jest pass (6 suites). CI green (run 22763467785). Commit e8c0979. Verified: gate.js:327-328 now inside else block at line 323-329. |
