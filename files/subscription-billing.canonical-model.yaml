@@ -2,7 +2,7 @@
 # ─────────────────────────────────────────────────────────────────────────────
 # CANONICAL MODEL — subscription-billing
 # Schema version: v2.0.0
-# Meta version:   1.1.0
+# Meta version:   1.2.0
 # Domain: subscription billing
 #
 # Exercises: recurring lifecycle, trial periods, billing cycles, proration,
@@ -13,7 +13,7 @@
 
 meta:
   id: "a1b2c3d4-e5f6-7890-abcd-ef1234567890"
-  version: "1.1.0"
+  version: "1.2.0"
   status: approved
   createdAt: "2026-03-05T09:00:00Z"
   approvedBy: "jane.smith"
@@ -22,7 +22,7 @@ meta:
   domain: "subscription-billing"
   owners: ["jane.smith", "tom.baker"]
   prevHash: null
-  changeReason: "TASK-01a/01b dunning max 4"
+  changeReason: "TASK-53: add expectedResult, coverageType, outputFieldRefs to all 11 scenarios"
 
 # ─────────────────────────────────────────────────────────────────────────────
 # GLOSSARY
@@ -224,6 +224,10 @@ scenarios:
     then:
       - { entity: subscription, field: status, value: "trialing" }
       - { entity: subscription, field: trialEndsAt, op: not-null }
+    coverageType: happy
+    expectedResult: true
+    outputFieldRefs:
+      - { entityId: subscription, fieldId: status, value: "trialing" }
 
   - id: subscription-created-without-trial
     intentRef: activate-trial-subscription
@@ -235,6 +239,10 @@ scenarios:
     then:
       - { entity: subscription, field: status, value: "active" }
       - { entity: subscription, field: trialEndsAt, value: null }
+    coverageType: edge
+    expectedResult: true
+    outputFieldRefs:
+      - { entityId: subscription, fieldId: status, value: "active" }
 
   # convert-trial-to-active
   - id: trial-converts-to-active
@@ -246,6 +254,10 @@ scenarios:
     when: renew-subscription
     then:
       - { entity: subscription, field: status, value: "active" }
+    coverageType: happy
+    expectedResult: true
+    outputFieldRefs:
+      - { entityId: subscription, fieldId: status, value: "active" }
 
   - id: trial-not-converted-if-cancelled
     intentRef: convert-trial-to-active
@@ -256,6 +268,8 @@ scenarios:
     when: renew-subscription
     then:
       - { entity: subscription, field: status, value: "cancelled" }
+    coverageType: failure
+    expectedResult: false
 
   # renew-active-subscription
   - id: active-subscription-renewed
@@ -268,6 +282,10 @@ scenarios:
     then:
       - { entity: subscription, field: status, value: "active" }
       - { entity: subscription, field: currentPeriodEnd, op: extended }
+    coverageType: happy
+    expectedResult: true
+    outputFieldRefs:
+      - { entityId: subscription, fieldId: status, value: "active" }
 
   - id: renewal-fails-moves-to-past-due
     intentRef: renew-active-subscription
@@ -280,6 +298,11 @@ scenarios:
     then:
       - { entity: subscription, field: status, value: "past-due" }
       - { entity: subscription, field: dunningAttempts, value: 1 }
+    coverageType: failure
+    expectedResult: false
+    outputFieldRefs:
+      - { entityId: subscription, fieldId: status, value: "past-due" }
+      - { entityId: subscription, fieldId: dunningAttempts, value: 1 }
 
   # cancel-subscription
   - id: active-subscription-cancelled
@@ -291,6 +314,10 @@ scenarios:
     then:
       - { entity: subscription, field: status, value: "cancelled" }
       - { entity: subscription, field: cancelledAt, op: not-null }
+    coverageType: happy
+    expectedResult: true
+    outputFieldRefs:
+      - { entityId: subscription, fieldId: status, value: "cancelled" }
 
   - id: trialing-subscription-cancelled
     intentRef: cancel-subscription
@@ -300,6 +327,10 @@ scenarios:
     when: cancel-subscription
     then:
       - { entity: subscription, field: status, value: "cancelled" }
+    coverageType: happy
+    expectedResult: true
+    outputFieldRefs:
+      - { entityId: subscription, fieldId: status, value: "cancelled" }
 
   - id: expired-subscription-cannot-be-cancelled
     intentRef: cancel-subscription
@@ -309,6 +340,8 @@ scenarios:
     when: cancel-subscription
     then:
       - error: SUBSCRIPTION_NOT_CANCELLABLE
+    coverageType: failure
+    expectedResult: false
 
   # handle-dunning
   - id: dunning-retry-succeeds
@@ -321,6 +354,10 @@ scenarios:
     then:
       - { entity: subscription, field: status, value: "active" }
       - { entity: subscription, field: dunningAttempts, value: 0 }
+    coverageType: happy
+    expectedResult: true
+    outputFieldRefs:
+      - { entityId: subscription, fieldId: status, value: "active" }
 
   - id: dunning-exhausted-cancels-subscription
     intentRef: handle-dunning
@@ -331,6 +368,10 @@ scenarios:
     when: retry-payment
     then:
       - { entity: subscription, field: status, value: "cancelled" }
+    coverageType: failure
+    expectedResult: true
+    outputFieldRefs:
+      - { entityId: subscription, fieldId: status, value: "cancelled" }
 
 # ─────────────────────────────────────────────────────────────────────────────
 # SCENARIO COVERAGE
