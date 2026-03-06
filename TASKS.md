@@ -1,6 +1,6 @@
 # DKCE + FABRIC Task List
 Generated from: PLAN.md, FABRIC.docx, BUGS.md, direct file verification
-Last updated: 2026-03-06T06:15:00Z
+Last updated: 2026-03-06T06:45:00Z
 ---
 ## How to use this file
 This is the authoritative task tracker for the DKCE + FABRIC project.
@@ -26,7 +26,7 @@ Rules:
 | TASK-01b | Update dunning glossary line 99 — change precision.max from 3 to 4 in subscription-billing.canonical-model.yaml | ✅ DONE | — | — | subscription-billing.canonical-model.yaml line 99 updated to precision.max: 4 |
 | TASK-02 | Add INVALID_QUANTITY to add-order-item errorResponses + knownVectors cross-entity documentation | ✅ DONE | — | — | Verified: line 896 and lines 1104-1145 |
 | TASK-03 | Extend gate.js Pass 1 with glossary precision checker | ✅ DONE | — | — | gate.js lines 168-171 (glossaryIndex), 243-277 (validateCondition Level A+B), 299-309 (validateAction). Negative test confirmed. tsc clean, jest pass. |
-| TASK-04 | Write fast-check property-based tests for numeric condition boundaries | ✗ NOT DONE | — | — | Gap 9 |
+| TASK-04 | Write fast-check property-based tests for numeric condition boundaries | ✅ DONE | — | — | tests/property/numeric-boundaries.property.test.ts — 23 tests, 4 boundaries (quantity, total, discount, dunning-attempts), dunning validation/glossary inconsistency test. All 44 tests pass. |
 | TASK-05 | Write Schemathesis OpenAPI tests against generated spec | ✗ NOT DONE | — | — | Gap 9 |
 | TASK-06 | Run fill.js against check-stock-on-add-item template | ✅ DONE | TASK-02 | — | Verified: real stub exists |
 | TASK-07 | Run gate.js all 4 passes against filled check-stock-on-add-item | ✅ DONE | TASK-06 | — | Verified: gate PASS |
