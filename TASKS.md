@@ -1,6 +1,6 @@
 # DKCE + FABRIC Task List
 Generated from: PLAN.md, FABRIC.docx, BUGS.md, direct file verification
-Last updated: 2026-03-06T13:00:00Z
+Last updated: 2026-03-06T13:30:00Z
 ---
 ## How to use this file
 This is the authoritative task tracker for the DKCE + FABRIC project.
@@ -41,7 +41,7 @@ Rules:
 | TASK-16 | Write chain.js — PostgreSQL append-only, SHA-256, schema: pipeline_run { id, stage, canonicalModelHash, prevHash, artifactHash, timestamp, status } | ✅ DONE | — | — | chain.js 290 lines. Commands: init, record, verify, history. Table created on Railway PostgreSQL. 2 test runs recorded, chain integrity verified. Commit 777d37c |
 | TASK-17 | Write Prisma trigger migration scripts for immutable:true fields in both canonical models | ✅ DONE | — | — | generate-immutable-triggers.js (184 lines). Generated SQL: order-management (4 triggers, 12 fields), subscription-billing (4 triggers, 15 fields). PostgreSQL BEFORE UPDATE triggers enforce_immutable_fields(). Commit 76b382b |
 | TASK-18 | Write .github/workflows/dkce.yml — stages: validate → template-generator → fill → gate → codegen → tsc → scenario runner → chain record → block deploy | ✅ DONE | TASK-03, TASK-04, TASK-05, TASK-10, TASK-15, TASK-16 | — | .github/workflows/dkce.yml (289 lines). 8 jobs: validate, fill (manual only), gate, codegen, tsc, scenario-runner, chain-record (main push only), deploy-gate. YAML validated with js-yaml. Commit 6b17dfe |
-| TASK-19 | Add oasdiff step to CI pipeline | ✗ NOT DONE | TASK-18 | — | Gap 7 |
+| TASK-19 | Add oasdiff step to CI pipeline | ✅ DONE | TASK-18 | — | oasdiff-check.js (pure JS, openapi-diff npm). Checks both domains, exit 1 on breaking changes. CI job added (Job 7, PRs only). Pipeline now 9 jobs. YAML valid. Commit c049423. Closes Gap 7. DKCE bootstrap complete. |
 | TASK-20 | Write signal-collector.js | ✗ NOT DONE | TASK-19 | — | Week 6+ |
 | TASK-21 | Write pattern-analyser.js — Claude API | ✗ NOT DONE | TASK-20 | — | Week 6+ |
 | TASK-22 | Write confidence-score.js | ✗ NOT DONE | TASK-20 | — | Week 6+ |
@@ -106,7 +106,7 @@ These items need further verification before status can be confirmed:
 ---
 ## Critical paths
 **Critical path to DKCE complete (TASK-19):**
-TASK-10 ✅ → TASK-15 ✅ → TASK-16 ✅ → TASK-18 ✅ → TASK-19
+TASK-10 ✅ → TASK-15 ✅ → TASK-16 ✅ → TASK-18 ✅ → TASK-19 ✅ — DKCE BOOTSTRAP COMPLETE
 Parallel work required before TASK-18: TASK-01a ✅, TASK-01b ✅, TASK-03 ✅, TASK-04 ✅, TASK-05 ✅, TASK-11 ✅ through TASK-17 ✅
 **Critical path to FABRIC Sprint A complete (TASK-25):**
-TASK-19 → TASK-23 → TASK-24 → TASK-25
+TASK-19 ✅ → TASK-23 → TASK-24 → TASK-25
