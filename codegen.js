@@ -1130,12 +1130,17 @@ function generateRuleStubs() {
             resolution: 'Run: node gate.js ' + templateInfo.file + ' --model <canonical-model.yaml> then re-run codegen.',
           });
           summary.rulesBlocked.push(ruleId);
-          // Remove any previously generated stub file
-          const stubPath = path.join(outputDir, 'rules', ruleId + '.ts');
-          if (fs.existsSync(stubPath)) {
-            fs.unlinkSync(stubPath);
+          // FIX-05 (VERIFY-05): Only delete stub if canonical model has null
+          // condition/action (truly unfilled). If the canonical model specifies
+          // the rule fully, the stub was generated from canonical data and
+          // deleting it would break src/ imports.
+          if (conditionNull || actionNull) {
+            const stubPath = path.join(outputDir, 'rules', ruleId + '.ts');
+            if (fs.existsSync(stubPath)) {
+              fs.unlinkSync(stubPath);
+            }
           }
-          continue; // skip stub generation for ungated rule
+          continue; // skip stub re-generation for ungated rule (existing stub preserved if canonical-specified)
         }
       }
     }
