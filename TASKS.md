@@ -63,6 +63,13 @@ Rules:
 | TASK-54 | Add generated/operations/ directory to codegen output — generate typed operation stub files per FABRIC §8 artifact list | ✗ NOT DONE | — | — | — |
 | TASK-55 | Fix CI gate job — run gate.js against filled templates (Pass 1-4), not just canonical model validation | ✗ NOT DONE | TASK-53 | — | — |
 | TASK-56 | Add template-generator stage to CI pipeline — run before fill stage | ✗ NOT DONE | — | — | — |
+| TASK-57 | Fix CI pipeline job isolation — collapse jobs so codegen/tsc/tests share filesystem | ✗ NOT DONE | TASK-18 | — | CI failing since c049423. GitHub Actions job isolation means codegen output does not reach tsc/scenario-runner. |
+| TASK-58 | Process change: separate scenario authoring from canonical model authoring (different session, different person) | ✗ NOT DONE | TASK-25 | — | §20.3 UNTRACKED backlog gap. Process change, no code. |
+| TASK-59 | Gate pass checking for overlapping conditions across all rules on same entity field | ✗ NOT DONE | TASK-28 | — | §20.3 UNTRACKED backlog gap. Rule interaction model. |
+| TASK-60 | Generate Backstage catalog-info.yaml from canonical model in codegen.js | ✗ NOT DONE | TASK-25 | — | FABRIC §8 MISSING artifact. Phase 2, Sprint TBD. |
+| TASK-61 | Configure DATABASE_URL as GitHub repository secret for chain-record CI job + chain.js graceful fallback | ✗ NOT DONE | TASK-18 | GitHub repo settings access required | §15/§17 criterion 6. chain.js exists but CI has never recorded a pipeline run. |
+| TASK-62 | Fix 167 schema validation errors on subscription-billing canonical model | ✗ NOT DONE | — | — | VERIFY-04. Structural errors: missing coverageType, glossaryRef, wrong lifecycle field names. |
+| TASK-63 | Document non-linear schema versioning (v2.1.0 deployed before v2.0.0 features) | ✗ NOT DONE | — | — | §21 note. v2.1.0 shipped for TemporalReference/expectedResult. v2.0.0 features planned for Sprint A. |
 
 ## FABRIC Phase 2 Tasks
 ### Sprint A — FABRIC foundation
