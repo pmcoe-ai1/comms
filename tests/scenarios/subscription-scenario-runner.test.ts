@@ -2,7 +2,7 @@
 // SCENARIO RUNNER — tests/scenarios/subscription-scenario-runner.test.ts
 // Gate Stage 2: Execute must-pass scenarios from subscription-billing
 // canonical model directly against rule implementation functions.
-// canonicalModelVersion: 1.0.0
+// canonicalModelVersion: 1.1.0
 //
 // No HTTP server. No mocks. Import rule functions and call with plain objects
 // constructed from scenario fieldRefs.
@@ -64,29 +64,26 @@ function assertOnlyDeclaredFieldsChanged<T extends object>(
 // ruleRef: activate-on-trial-start
 // intentRef: activate-trial-subscription
 // entityRef: subscription
-// canonicalCondition: status is-null
-// canonicalAction: call-operation determine-initial-status
-//
-// GAPFLAG: This rule uses call-operation action — the actual status
-// determination (trialing vs active) depends on plan.trialDays, which is
-// cross-entity data the rule cannot access. The rule validates the precondition
-// (status is null) and delegates to the operation layer.
+// canonicalCondition: plan-id is-not-null
+// canonicalAction: set status = "trialing"
+// Declared modified fields: [status]
 // ─────────────────────────────────────────────────────────────────────────────
 
-describe('activate-on-trial-start scenarios (KNOWN GAP — call-operation delegates to operation layer)', () => {
+describe('activate-on-trial-start scenarios', () => {
   // scenarioRef: subscription-created-in-trial
   // priority: must-pass
   // coverageType: happy
   // fieldRefs: {subscription, status, trialing}
   //
-  // GAPFLAG: Rule returns subscription unchanged (call-operation). Cannot verify
-  // that status becomes 'trialing' — that is the operation's job.
-  it.failing(
-    'subscription-created-in-trial — status=null → status=trialing (GAPFLAG: call-operation, cross-entity plan.trialDays)',
+  // PROMOTED from it.failing — FIX-02 updated rule to match canonical action
+  // (set status = "trialing"). Rule now satisfies this scenario directly.
+  it(
+    'subscription-created-in-trial — planId present → status=trialing',
     () => {
-      const sub = makeSubscription({ status: null as any });
-      const result = activateOnTrialStart(sub);
-      // Scenario expects status=trialing, but rule uses call-operation and returns unchanged
+      const before = makeSubscription({ status: null as any });
+      const result = activateOnTrialStart(before);
+      // canonicalAction: set status = "trialing"
+      assertOnlyDeclaredFieldsChanged(before, result, ['status'], 'subscription-created-in-trial');
       expect(result.status).toBe('trialing');
     },
   );
@@ -96,14 +93,15 @@ describe('activate-on-trial-start scenarios (KNOWN GAP — call-operation delega
   // coverageType: edge
   // fieldRefs: {subscription, status, active}
   //
-  // GAPFLAG: Rule returns subscription unchanged (call-operation). Cannot verify
-  // that status becomes 'active' — that is the operation's job.
+  // GAPFLAG: Rule always sets status to "trialing" per canonical action.
+  // Scenario expects "active" — the distinction between trial and non-trial
+  // activation is an operation-layer concern (requires cross-entity plan.trialDays).
   it.failing(
-    'subscription-created-without-trial — status=null → status=active (GAPFLAG: call-operation, cross-entity plan.trialDays)',
+    'subscription-created-without-trial — planId present → status=active (GAPFLAG: rule sets trialing, active requires operation layer)',
     () => {
       const sub = makeSubscription({ status: null as any });
       const result = activateOnTrialStart(sub);
-      // Scenario expects status=active, but rule uses call-operation and returns unchanged
+      // Scenario expects status=active, but rule always sets trialing per canonical action
       expect(result.status).toBe('active');
     },
   );
