@@ -1,6 +1,6 @@
 # DKCE + FABRIC Task List
 Generated from: PLAN.md, FABRIC.docx, BUGS.md, direct file verification
-Last updated: 2026-03-06T10:00:00Z
+Last updated: 2026-03-06T10:30:00Z
 ---
 ## How to use this file
 This is the authoritative task tracker for the DKCE + FABRIC project.
@@ -36,7 +36,7 @@ Rules:
 | TASK-11 | Run fill.js against activate-on-trial-start template | ✅ DONE | — | — | Filled via Claude API. Status: filled-pending-gate. Commit 450ecee |
 | TASK-12 | Run gate.js all 4 passes against re-filled activate-on-trial-start | ✅ DONE | TASK-11 | — | All 4 passes PASS. Commit aa33dac |
 | TASK-13 | Run codegen.js against subscription-billing.canonical-model.yaml | ✅ DONE | TASK-12 | — | Codegen complete. Lifecycle compat shim + filled template lookup fix added. 0 GapFlags. Commit 350282e |
-| TASK-14 | Run tsc --noEmit — must be clean after placeholder replaced | ✗ NOT DONE | TASK-13 | — | — |
+| TASK-14 | Run tsc --noEmit — must be clean after placeholder replaced | ✅ DONE | TASK-13 | — | tsc --noEmit exit 0. Restored check-stock-on-add-item stub deleted by codegen. |
 | TASK-15 | Investigate 6 it.failing subscription scenario tests — promote resolved, document remainder | ✗ NOT DONE | TASK-14 | — | All 6 are operation-layer gaps per scenario runner report |
 | TASK-16 | Write chain.js — PostgreSQL append-only, SHA-256, schema: pipeline_run { id, stage, canonicalModelHash, prevHash, artifactHash, timestamp, status } | ✗ NOT DONE | — | PostgreSQL instance | Foundation of FABRIC audit trail |
 | TASK-17 | Write Prisma trigger migration scripts for immutable:true fields in both canonical models | ✗ NOT DONE | — | PostgreSQL instance | Gap 8 |
