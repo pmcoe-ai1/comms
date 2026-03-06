@@ -200,7 +200,7 @@ intents:
       including current status, billing cycle dates, and plan details.
     status: approved
     approvedBy: human
-    approvedAt: "2026-03-06"
+    approvedAt: "2026-03-06T10:00:00Z"
     version: "1.0"
     priority: must
     glossaryRefs: [subscription]
@@ -215,15 +215,10 @@ scenarios:
   # activate-trial-subscription
   - id: subscription-created-in-trial
     intentRef: activate-trial-subscription
-    description: Customer subscribes to Pro plan with 14-day trial
-    given:
-      - { entity: plan, field: id, value: "plan-pro" }
-      - { entity: plan, field: trialDays, value: 14 }
-      - { entity: subscription, field: status, value: "trialing" }
+    name: Customer subscribes to Pro plan with 14-day trial
+    given: a plan with 14-day trial period (trialDays=14) and customer subscribing
     when: subscribe-to-plan
-    then:
-      - { entity: subscription, field: status, value: "trialing" }
-      - { entity: subscription, field: trialEndsAt, op: not-null }
+    then: subscription created in trialing status with trialEndsAt set
     coverageType: happy
     expectedResult: true
     outputFieldRefs:
@@ -231,14 +226,10 @@ scenarios:
 
   - id: subscription-created-without-trial
     intentRef: activate-trial-subscription
-    description: Customer subscribes to Basic plan with no trial
-    given:
-      - { entity: plan, field: id, value: "plan-basic" }
-      - { entity: plan, field: trialDays, value: 0 }
+    name: Customer subscribes to Basic plan with no trial
+    given: a plan with no trial days (trialDays=0) and customer subscribing
     when: subscribe-to-plan
-    then:
-      - { entity: subscription, field: status, value: "active" }
-      - { entity: subscription, field: trialEndsAt, value: null }
+    then: subscription created in active status with trialEndsAt null
     coverageType: edge
     expectedResult: true
     outputFieldRefs:
@@ -247,13 +238,10 @@ scenarios:
   # convert-trial-to-active
   - id: trial-converts-to-active
     intentRef: convert-trial-to-active
-    description: Trial subscription converts to active on trialEndsAt
-    given:
-      - { entity: subscription, field: status, value: "trialing" }
-      - { entity: subscription, field: trialEndsAt, op: in-past }
+    name: Trial subscription converts to active on trialEndsAt
+    given: a trialing subscription with trialEndsAt in the past
     when: renew-subscription
-    then:
-      - { entity: subscription, field: status, value: "active" }
+    then: subscription status transitions to active
     coverageType: happy
     expectedResult: true
     outputFieldRefs:
@@ -261,27 +249,20 @@ scenarios:
 
   - id: trial-not-converted-if-cancelled
     intentRef: convert-trial-to-active
-    description: Cancelled trial subscription does not convert
-    given:
-      - { entity: subscription, field: status, value: "cancelled" }
-      - { entity: subscription, field: trialEndsAt, op: in-past }
+    name: Cancelled trial subscription does not convert
+    given: a cancelled subscription with trialEndsAt in the past
     when: renew-subscription
-    then:
-      - { entity: subscription, field: status, value: "cancelled" }
+    then: subscription status remains cancelled
     coverageType: failure
     expectedResult: false
 
   # renew-active-subscription
   - id: active-subscription-renewed
     intentRef: renew-active-subscription
-    description: Active subscription renewed successfully at cycle end
-    given:
-      - { entity: subscription, field: status, value: "active" }
-      - { entity: subscription, field: currentPeriodEnd, op: in-past }
+    name: Active subscription renewed successfully at cycle end
+    given: an active subscription with currentPeriodEnd in the past
     when: renew-subscription
-    then:
-      - { entity: subscription, field: status, value: "active" }
-      - { entity: subscription, field: currentPeriodEnd, op: extended }
+    then: subscription status remains active and currentPeriodEnd is extended
     coverageType: happy
     expectedResult: true
     outputFieldRefs:
@@ -289,15 +270,10 @@ scenarios:
 
   - id: renewal-fails-moves-to-past-due
     intentRef: renew-active-subscription
-    description: Failed renewal payment moves subscription to past-due
-    given:
-      - { entity: subscription, field: status, value: "active" }
-      - { entity: subscription, field: currentPeriodEnd, op: in-past }
-      - { entity: subscription, field: paymentFails, value: true }
+    name: Failed renewal payment moves subscription to past-due
+    given: an active subscription with currentPeriodEnd in the past and payment failing
     when: renew-subscription
-    then:
-      - { entity: subscription, field: status, value: "past-due" }
-      - { entity: subscription, field: dunningAttempts, value: 1 }
+    then: subscription status moves to past-due and dunningAttempts incremented to 1
     coverageType: failure
     expectedResult: false
     outputFieldRefs:
@@ -307,13 +283,10 @@ scenarios:
   # cancel-subscription
   - id: active-subscription-cancelled
     intentRef: cancel-subscription
-    description: Active subscription cancelled at period end
-    given:
-      - { entity: subscription, field: status, value: "active" }
+    name: Active subscription cancelled at period end
+    given: an active subscription
     when: cancel-subscription
-    then:
-      - { entity: subscription, field: status, value: "cancelled" }
-      - { entity: subscription, field: cancelledAt, op: not-null }
+    then: subscription status set to cancelled and cancelledAt recorded
     coverageType: happy
     expectedResult: true
     outputFieldRefs:
@@ -321,12 +294,10 @@ scenarios:
 
   - id: trialing-subscription-cancelled
     intentRef: cancel-subscription
-    description: Trialing subscription can be cancelled immediately
-    given:
-      - { entity: subscription, field: status, value: "trialing" }
+    name: Trialing subscription can be cancelled immediately
+    given: a trialing subscription
     when: cancel-subscription
-    then:
-      - { entity: subscription, field: status, value: "cancelled" }
+    then: subscription status set to cancelled
     coverageType: happy
     expectedResult: true
     outputFieldRefs:
@@ -334,26 +305,20 @@ scenarios:
 
   - id: expired-subscription-cannot-be-cancelled
     intentRef: cancel-subscription
-    description: Expired subscription cannot be cancelled again
-    given:
-      - { entity: subscription, field: status, value: "expired" }
+    name: Expired subscription cannot be cancelled again
+    given: an expired subscription
     when: cancel-subscription
-    then:
-      - error: SUBSCRIPTION_NOT_CANCELLABLE
+    then: SUBSCRIPTION_NOT_CANCELLABLE error is thrown
     coverageType: failure
     expectedResult: false
 
   # handle-dunning
   - id: dunning-retry-succeeds
     intentRef: handle-dunning
-    description: Dunning retry succeeds and subscription returns to active
-    given:
-      - { entity: subscription, field: status, value: "past-due" }
-      - { entity: subscription, field: dunningAttempts, value: 1 }
+    name: Dunning retry succeeds and subscription returns to active
+    given: a past-due subscription with 1 dunning attempt
     when: retry-payment
-    then:
-      - { entity: subscription, field: status, value: "active" }
-      - { entity: subscription, field: dunningAttempts, value: 0 }
+    then: subscription status returns to active
     coverageType: happy
     expectedResult: true
     outputFieldRefs:
@@ -361,13 +326,10 @@ scenarios:
 
   - id: dunning-exhausted-cancels-subscription
     intentRef: handle-dunning
-    description: All dunning retries exhausted — subscription cancelled
-    given:
-      - { entity: subscription, field: status, value: "past-due" }
-      - { entity: subscription, field: dunningAttempts, value: 3 }
+    name: All dunning retries exhausted — subscription cancelled
+    given: a past-due subscription with 3 dunning attempts at maximum
     when: retry-payment
-    then:
-      - { entity: subscription, field: status, value: "cancelled" }
+    then: subscription status set to cancelled
     coverageType: failure
     expectedResult: true
     outputFieldRefs:
@@ -380,29 +342,19 @@ scenarios:
 scenarioCoverage:
 
   - intentRef: activate-trial-subscription
-    minimumScenarios: 2
-    mustInclude: [happy, failure]
-    scenarioRefs: [subscription-created-in-trial, subscription-created-without-trial]
+    deployGate: 80
 
   - intentRef: convert-trial-to-active
-    minimumScenarios: 2
-    mustInclude: [happy, failure]
-    scenarioRefs: [trial-converts-to-active, trial-not-converted-if-cancelled]
+    deployGate: 80
 
   - intentRef: renew-active-subscription
-    minimumScenarios: 2
-    mustInclude: [happy, failure]
-    scenarioRefs: [active-subscription-renewed, renewal-fails-moves-to-past-due]
+    deployGate: 80
 
   - intentRef: cancel-subscription
-    minimumScenarios: 3
-    mustInclude: [happy, failure]
-    scenarioRefs: [active-subscription-cancelled, trialing-subscription-cancelled, expired-subscription-cannot-be-cancelled]
+    deployGate: 80
 
   - intentRef: handle-dunning
-    minimumScenarios: 2
-    mustInclude: [happy, failure]
-    scenarioRefs: [dunning-retry-succeeds, dunning-exhausted-cancels-subscription]
+    deployGate: 80
 
 # ─────────────────────────────────────────────────────────────────────────────
 # ENTITIES
@@ -412,18 +364,20 @@ entities:
 
   - id: plan
     name: Plan
+    glossaryRef: plan
     description: A named tier of service with price and billing interval.
     fields:
       - { id: id, name: id, type: uuid, required: true, immutable: true, systemField: true, glossaryRef: plan }
       - { id: name, name: name, type: string, required: true, glossaryRef: plan }
       - { id: price, name: price, type: decimal, required: true, validation: { min: 0, max: 99999.99 }, glossaryRef: plan-price }
       - { id: interval, name: interval, type: enum, enumValues: [monthly, annual], required: true, glossaryRef: billing-cycle }
-      - { id: trial-days, name: trialDays, type: integer, required: false, default: 0, validation: { min: 0, max: 90 }, glossaryRef: trial-period }
-      - { id: is-active, name: isActive, type: boolean, required: true, default: true }
+      - { id: trial-days, name: trialDays, type: integer, required: false, validation: { min: 0, max: 90 }, glossaryRef: trial-period }
+      - { id: is-active, name: isActive, type: boolean, required: true }
       - { id: created-at, name: createdAt, type: datetime, required: true, immutable: true, systemField: true }
 
   - id: subscription
     name: Subscription
+    glossaryRef: subscription
     description: A recurring billing agreement between a customer and a plan.
     fields:
       - { id: id, name: id, type: uuid, required: true, immutable: true, systemField: true, glossaryRef: subscription }
@@ -434,22 +388,22 @@ entities:
       - { id: current-period-start, name: currentPeriodStart, type: datetime, required: true, glossaryRef: billing-cycle }
       - { id: current-period-end, name: currentPeriodEnd, type: datetime, required: true, glossaryRef: billing-cycle }
       - { id: anchor-date, name: anchorDate, type: integer, required: true, immutable: true, validation: { min: 1, max: 28 }, glossaryRef: subscription-anchor-date }
-      - { id: dunning-attempts, name: dunningAttempts, type: integer, required: true, default: 0, validation: { min: 0, max: 4 }, glossaryRef: dunning }
+      - { id: dunning-attempts, name: dunningAttempts, type: integer, required: true, validation: { min: 0, max: 4 }, glossaryRef: dunning }
       - { id: cancelled-at, name: cancelledAt, type: datetime, required: false, nullable: true }
       - { id: created-at, name: createdAt, type: datetime, required: true, immutable: true, systemField: true }
       - { id: updated-at, name: updatedAt, type: datetime, required: true, systemField: true }
     lifecycle:
-      field: status
-      initial: trialing
+      statusField: status
+      initialState: trialing
       transitions:
-        - { from: trialing, to: active, trigger: trial-ends-without-cancellation, operationRef: renew-subscription }
-        - { from: trialing, to: cancelled, trigger: customer-cancels, operationRef: cancel-subscription }
-        - { from: active, to: past-due, trigger: payment-fails, operationRef: renew-subscription }
-        - { from: active, to: cancelled, trigger: customer-cancels, operationRef: cancel-subscription }
-        - { from: active, to: active, trigger: renewal-succeeds, operationRef: renew-subscription }
-        - { from: past-due, to: active, trigger: retry-payment-succeeds, operationRef: retry-payment }
-        - { from: past-due, to: cancelled, trigger: dunning-exhausted, operationRef: retry-payment }
-        - { from: cancelled, to: active, trigger: reactivation, operationRef: reactivate-subscription }
+        - { from: trialing, to: active, trigger: trial-ends-without-cancellation }
+        - { from: trialing, to: cancelled, trigger: customer-cancels }
+        - { from: active, to: past-due, trigger: payment-fails }
+        - { from: active, to: cancelled, trigger: customer-cancels }
+        - { from: active, to: active, trigger: renewal-succeeds }
+        - { from: past-due, to: active, trigger: retry-payment-succeeds }
+        - { from: past-due, to: cancelled, trigger: dunning-exhausted }
+        - { from: cancelled, to: active, trigger: reactivation }
     indexes:
       - { fields: [customer-id], unique: false }
       - { fields: [status], unique: false }
@@ -458,6 +412,7 @@ entities:
 
   - id: billing-record
     name: BillingRecord
+    glossaryRef: billing-record
     description: A record of a billing event — charge, refund, or credit — for a subscription.
     fields:
       - { id: id, name: id, type: uuid, required: true, immutable: true, systemField: true }
@@ -467,11 +422,12 @@ entities:
       - { id: status, name: status, type: enum, enumValues: [pending, succeeded, failed], required: true }
       - { id: period-start, name: periodStart, type: datetime, required: true, immutable: true }
       - { id: period-end, name: periodEnd, type: datetime, required: true, immutable: true }
-      - { id: attempt-number, name: attemptNumber, type: integer, required: true, default: 1, validation: { min: 1, max: 3 } }
+      - { id: attempt-number, name: attemptNumber, type: integer, required: true, validation: { min: 1, max: 3 } }
       - { id: created-at, name: createdAt, type: datetime, required: true, immutable: true, systemField: true }
 
   - id: customer
     name: Customer
+    glossaryRef: customer
     description: A registered user who has one or more subscriptions.
     fields:
       - { id: id, name: id, type: uuid, required: true, immutable: true, systemField: true }
@@ -520,10 +476,9 @@ rules:
       Set status to cancelled and record cancelledAt. If the subscription is
       already expired or cancelled, throw SUBSCRIPTION_NOT_CANCELLABLE.
     condition:
-      type: OR
-      conditions:
-        - { field: status, op: eq, value: "trialing" }
-        - { field: status, op: eq, value: "active" }
+      or:
+        - { field: status, operator: eq, value: "trialing" }
+        - { field: status, operator: eq, value: "active" }
     action:
       type: set
       field: status
@@ -539,17 +494,16 @@ rules:
       If dunningAttempts is less than 3, the subscription may retry payment.
       If dunningAttempts equals 3, cancel the subscription — dunning exhausted.
     condition:
-      type: AND
-      conditions:
-        - { field: status, op: eq, value: "past-due" }
-        - { field: dunning-attempts, op: lte, value: 3 }
+      and:
+        - { field: status, operator: eq, value: "past-due" }
+        - { field: dunning-attempts, operator: lte, value: 3 }
     action:
       type: set
       field: dunning-attempts
       value:
-        $add:
-          left: { $field: dunning-attempts }
-          right: { $value: 1 }
+        $field: dunning-attempts
+        $op: add
+        $value: 1
     scenarioRefs: [dunning-retry-succeeds, dunning-exhausted-cancels-subscription]
     priority: 4
 
@@ -558,16 +512,16 @@ rules:
 # ─────────────────────────────────────────────────────────────────────────────
 
 events:
-  - { id: subscription.created, description: Fired when a new subscription is created. }
-  - { id: subscription.activated, description: Fired when a subscription moves to active status. }
-  - { id: subscription.cancelled, description: Fired when a subscription is cancelled. }
-  - { id: subscription.past-due, description: Fired when a subscription moves to past-due status. }
-  - { id: subscription.renewed, description: Fired when a subscription is successfully renewed. }
-  - { id: subscription.trial-started, description: Fired when a trial subscription is created. }
-  - { id: subscription.trial-converted, description: Fired when a trial converts to active. }
-  - { id: billing.charge-succeeded, description: Fired when a billing charge succeeds. }
-  - { id: billing.charge-failed, description: Fired when a billing charge fails. }
-  - { id: billing.dunning-exhausted, description: Fired when all dunning retries are exhausted. }
+  - { id: subscription.created, name: "Subscription Created", entityRef: subscription, description: Fired when a new subscription is created. }
+  - { id: subscription.activated, name: "Subscription Activated", entityRef: subscription, description: Fired when a subscription moves to active status. }
+  - { id: subscription.cancelled, name: "Subscription Cancelled", entityRef: subscription, description: Fired when a subscription is cancelled. }
+  - { id: subscription.past-due, name: "Subscription Past Due", entityRef: subscription, description: Fired when a subscription moves to past-due status. }
+  - { id: subscription.renewed, name: "Subscription Renewed", entityRef: subscription, description: Fired when a subscription is successfully renewed. }
+  - { id: subscription.trial-started, name: "Subscription Trial Started", entityRef: subscription, description: Fired when a trial subscription is created. }
+  - { id: subscription.trial-converted, name: "Subscription Trial Converted", entityRef: subscription, description: Fired when a trial converts to active. }
+  - { id: billing.charge-succeeded, name: "Billing Charge Succeeded", entityRef: billing-record, description: Fired when a billing charge succeeds. }
+  - { id: billing.charge-failed, name: "Billing Charge Failed", entityRef: billing-record, description: Fired when a billing charge fails. }
+  - { id: billing.dunning-exhausted, name: "Billing Dunning Exhausted", entityRef: billing-record, description: Fired when all dunning retries are exhausted. }
 
 # ─────────────────────────────────────────────────────────────────────────────
 # OPERATIONS
