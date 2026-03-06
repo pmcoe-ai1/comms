@@ -12,9 +12,9 @@
         "action"
       ],
       "template": "templates-subscription/activate-on-trial-start.fill-template.yaml",
-      "filled": false,
-      "filledAt": null,
-      "filledBy": null,
+      "filled": true,
+      "filledAt": "2026-03-06T07:35:11.751Z",
+      "filledBy": "claude-sonnet-4-20250514",
       "gateResult": null
     },
     {

@@ -14,7 +14,7 @@ _meta:
   filledBy: claude-sonnet-4-20250514
   status: gate-failed-needs-refill
   gateResult: FAIL
-  gateRunAt: "2026-03-05T11:26:47.571Z"
+  gateRunAt: "2026-03-06T05:48:52.363Z"
   gatePass1: false
   gatePass2: true
   gatePass3: true
