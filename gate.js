@@ -165,6 +165,11 @@ if (runTemplateGate) {
 
   const fieldMap = entity ? Object.fromEntries(entity.fields.map(f => [f.id, f])) : {};
 
+  // ── Glossary precision index (TASK-03) ──
+  const glossaryIndex = Object.fromEntries((model.glossary || []).map(g => [g.id, g]));
+  const intent = (model.intents || []).find(i => i.id === (rule ? rule.intentRef : null));
+  const intentGlossaryRefs = intent ? (intent.glossaryRefs || []) : [];
+
   // BUG-023 fix: extract source states from condition tree for per-source lifecycle validation
   function extractSourceStates(condition, statusField) {
     if (!condition) return [];
@@ -234,6 +239,42 @@ if (runTemplateGate) {
         if (field.validation.max !== undefined && cond.value > field.validation.max)
           fail1(`${condPath}: value ${cond.value} exceeds maximum ${field.validation.max} for field '${cond.field}'`);
       }
+
+      // ── Glossary precision check (TASK-03) ──
+      // Level A: field → glossaryRef → glossary term precision
+      if (field.glossaryRef) {
+        const glossaryTerm = glossaryIndex[field.glossaryRef];
+        if (glossaryTerm && glossaryTerm.precision) {
+          const prec = glossaryTerm.precision;
+          if (prec.type === 'range' && typeof cond.value === 'number') {
+            if (prec.min !== undefined && cond.value < prec.min)
+              fail1(`${condPath}: value ${cond.value} is outside glossary precision range [${prec.min}, ${prec.max}] for field '${cond.field}' (glossary: '${glossaryTerm.id}', conceptVersion: ${glossaryTerm.conceptVersion})`);
+            if (prec.max !== undefined && cond.value > prec.max)
+              fail1(`${condPath}: value ${cond.value} is outside glossary precision range [${prec.min}, ${prec.max}] for field '${cond.field}' (glossary: '${glossaryTerm.id}', conceptVersion: ${glossaryTerm.conceptVersion})`);
+          }
+          if (prec.type === 'enum' && prec.values) {
+            const checkVals = Array.isArray(cond.value) ? cond.value : (typeof cond.value === 'string' ? [cond.value] : []);
+            for (const v of checkVals) {
+              if (typeof v === 'string' && !prec.values.includes(v))
+                fail1(`${condPath}: value '${v}' is not in glossary precision values [${prec.values.join(', ')}] for glossary term '${glossaryTerm.id}' (conceptVersion: ${glossaryTerm.conceptVersion})`);
+            }
+          }
+        }
+      }
+      // Level B: intent → glossaryRefs → glossary terms precision (warning only)
+      if (typeof cond.value === 'number') {
+        const fieldGlossaryId = field.glossaryRef || null;
+        for (const gRefId of intentGlossaryRefs) {
+          if (gRefId === fieldGlossaryId) continue; // already checked at Level A
+          const glossaryTerm = glossaryIndex[gRefId];
+          if (!glossaryTerm || !glossaryTerm.precision) continue;
+          const prec = glossaryTerm.precision;
+          if (prec.type === 'range' && prec.min !== undefined && prec.max !== undefined) {
+            if (cond.value < prec.min || cond.value > prec.max)
+              warn1(`${condPath}: value ${cond.value} may conflict with glossary term '${glossaryTerm.id}' precision [${prec.min}, ${prec.max}] (referenced by intent '${rule.intentRef}', conceptVersion: ${glossaryTerm.conceptVersion})`);
+          }
+        }
+      }
     }
   }
 
@@ -255,6 +296,17 @@ if (runTemplateGate) {
         } else {
           if (field.immutable)   fail1(`${actionPath}: field '${action.field}' is immutable — cannot be set`);
           if (field.systemField) fail1(`${actionPath}: field '${action.field}' is a system field — cannot be set`);
+          // Glossary precision check on action values (TASK-03)
+          if (field.glossaryRef && action.value !== undefined && typeof action.value === 'number') {
+            const glossaryTerm = glossaryIndex[field.glossaryRef];
+            if (glossaryTerm && glossaryTerm.precision && glossaryTerm.precision.type === 'range') {
+              const prec = glossaryTerm.precision;
+              if (prec.min !== undefined && action.value < prec.min)
+                fail1(`${actionPath}: value ${action.value} is outside glossary precision range [${prec.min}, ${prec.max}] for field '${action.field}' (glossary: '${glossaryTerm.id}', conceptVersion: ${glossaryTerm.conceptVersion})`);
+              if (prec.max !== undefined && action.value > prec.max)
+                fail1(`${actionPath}: value ${action.value} is outside glossary precision range [${prec.min}, ${prec.max}] for field '${action.field}' (glossary: '${glossaryTerm.id}', conceptVersion: ${glossaryTerm.conceptVersion})`);
+            }
+          }
           if (field.type === 'enum' && entity.lifecycle?.statusField === action.field) {
             const targetValue = typeof action.value === 'string' ? action.value : null;
             if (targetValue) {
