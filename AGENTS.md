@@ -308,6 +308,24 @@ meta.version follows semver:
 
 On every bump: update meta.version, set meta.changeReason (one line). prevHash is set by chain.js — never manual. Version must be bumped before committing any canonical model change.
 
+## Non-linear schema versioning (TASK-63)
+
+`canonical-model.schema.json` version history is non-linear. This is intentional and documented:
+
+- **v2.1.0** shipped March 2026 to add `TemporalReference`, `expectedResult`, `coverageType`,
+  and `outputFieldRefs` on scenarios (DKCE AUDIT-02 requirements). These were needed to
+  unblock gate Pass 2 semantic validation before FABRIC Phase 2 began.
+- **v2.0.0** features (`objectMeta`, `objectDependencies`, `publishedOperations`) are planned
+  for FABRIC Phase 2 Sprint A (TASK-23). They introduce breaking schema changes and were
+  not yet needed at time of 2.1.0 deployment.
+
+Rationale: features required by DKCE AUDIT-02 shipped as 2.1.0 (minor addition, backward
+compatible) without waiting for the Phase 2 breaking changes that will constitute 2.0.0.
+
+**Impact on tooling**: do not assume schema versions are strictly monotonically sequential.
+A validator that rejects v2.1.0 because v2.0.0 does not exist would be incorrect. Treat each
+version as a legitimate production release independent of numeric order.
+
 ---
 
 ## What to build: codegen.js
