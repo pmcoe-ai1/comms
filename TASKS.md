@@ -1,6 +1,6 @@
 # DKCE + FABRIC Task List
 Generated from: PLAN.md, FABRIC.docx, BUGS.md, direct file verification
-Last updated: 2026-03-06T12:45:00Z
+Last updated: 2026-03-06T13:00:00Z
 ---
 ## How to use this file
 This is the authoritative task tracker for the DKCE + FABRIC project.
@@ -101,6 +101,8 @@ These items need further verification before status can be confirmed:
 | VERIFY-01 | example.canonical-model.yaml meta.version is 1.0.0 | RESOLVED — meta.version is intentionally 1.0.0. Schema version ≠ model version is documented in file header. Version bump policy is undefined — see VERIFY-03. |
 | VERIFY-02 | subscription-billing.canonical-model.yaml meta.version | RESOLVED — meta.version is 1.0.0 on both models. See VERIFY-03 for version bump policy gap. |
 | VERIFY-03 | meta.version policy undefined | RESOLVED — Version bump policy added to AGENTS.md lines 301-309. Both models bumped to 1.1.0 with changeReason set. example model validates; subscription-billing has 167 pre-existing schema errors (not caused by version bump). |
+| VERIFY-04 | subscription-billing.canonical-model.yaml fails validate.js with 167 schema errors | Pre-existing structural mismatches (missing coverageType, glossaryRef, wrong lifecycle field names). Surfaced by VERIFY-03. Does not block pipeline (fill/gate/codegen work despite it). Must be fixed before schema validation can be enforced in CI. |
+| VERIFY-05 | codegen.js UNGATED cleanup deletes stubs imported by src/ | When codegen runs for a model with UNGATED rules, it deletes generated/rules/*.ts stubs. If src/rules/*.ts imports from a deleted stub, tsc breaks. Surfaced by TASK-14 (had to restore check-stock-on-add-item.ts from git). Design issue — codegen should not delete stubs that have downstream dependents. |
 ---
 ## Critical paths
 **Critical path to DKCE complete (TASK-19):**
