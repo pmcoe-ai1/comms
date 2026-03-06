@@ -15,7 +15,8 @@
       "filled": true,
       "filledAt": "2026-03-06T07:35:11.751Z",
       "filledBy": "claude-sonnet-4-20250514",
-      "gateResult": null
+      "gateResult": "pass",
+      "gateAt": "2026-03-06T10:36:44.409Z"
     },
     {
       "ruleId": "convert-trial-on-renewal",
@@ -27,7 +28,8 @@
       "filled": false,
       "filledAt": null,
       "filledBy": null,
-      "gateResult": null
+      "gateResult": "pass",
+      "gateAt": "2026-03-06T10:36:44.455Z"
     }
   ]
 }

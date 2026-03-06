@@ -6,6 +6,7 @@
 //   - Prisma schema (generated/prisma/schema.prisma)
 //   - OpenAPI 3.1 spec (generated/openapi/openapi.yaml)
 //   - Rule stubs (generated/rules/)
+//   - Operation stubs (generated/operations/)
 //   - Gap flags report (generated/gapflags.json)
 // ─────────────────────────────────────────────────────────────────────────────
 
@@ -97,6 +98,7 @@ const summary = {
   entitiesCovered: [],
   rulesStubbed: [],
   rulesBlocked: [],
+  operationsStubbed: [],
   gapFlags: [],
 };
 
@@ -1196,7 +1198,109 @@ function generateRuleStubs() {
   }
 }
 
-// ─── 6. Write gapflags.json ──────────────────────────────────────────────────
+
+// ─── 6. Generate operation stubs ─────────────────────────────────────────────
+
+function generateOperationStubs() {
+  const operations = model.operations || [];
+  if (operations.length === 0) {
+    console.log('   (no operations defined — skipping)');
+    return;
+  }
+
+  for (const op of operations) {
+    const opId = op.id;
+    const fnTypeName = toPascalCase(opId) + 'Fn';
+    const reqTypeName = toPascalCase(opId) + 'Request';
+
+    const inputEntityId = op.inputEntity;
+    const outputEntityId = op.outputEntity;
+
+    const inputEntity  = inputEntityId  ? model.entities.find(e => e.id === inputEntityId)  : null;
+    const outputEntity = outputEntityId ? model.entities.find(e => e.id === outputEntityId) : null;
+
+    const inputEntityName  = inputEntity  ? inputEntity.name  : null;
+    const outputEntityName = outputEntity ? outputEntity.name : 'void';
+
+    const ruleRefs    = op.ruleRefs    || [];
+    const scenarioRefs = op.scenarioRefs || [];
+    const pathParams  = op.pathParams  || [];
+
+    const lines = [];
+    lines.push(guardComment(version, 'ts'));
+    lines.push('');
+    lines.push(`// operation:    ${opId}`);
+    lines.push(`// method:       ${op.method} ${op.path}`);
+    lines.push(`// intentRef:    ${op.intentRef || '—'}`);
+    lines.push(`// ruleRefs:     [${ruleRefs.join(', ')}]`);
+    lines.push(`// scenarioRefs: [${scenarioRefs.join(', ')}]`);
+    lines.push(`//`);
+    lines.push(`// IMPLEMENT THIS STUB in: src/operations/${opId}.ts`);
+    lines.push(`// Do not modify this file. Changes here will be overwritten by codegen.`);
+    lines.push('');
+
+    // Imports — deduplicate if input === output entity
+    const importedNames = new Set();
+    if (inputEntityName) importedNames.add(inputEntityName);
+    if (outputEntityName && outputEntityName !== 'void') importedNames.add(outputEntityName);
+    for (const name of importedNames) {
+      lines.push(`import type { ${name} } from '../interfaces/${name}';`);
+    }
+    lines.push('');
+
+    // Build path params string
+    const pathParamFields = pathParams.map(p => `${p.name}: string`).join('; ');
+
+    // Request type (only if there's a body or path params)
+    const hasBody      = op.inputMode === 'body' && inputEntityName;
+    const hasPathParams = pathParamFields.length > 0;
+
+    if (hasBody || hasPathParams) {
+      lines.push(`export type ${reqTypeName} = {`);
+      if (hasBody)       lines.push(`  body: ${inputEntityName};`);
+      if (hasPathParams) lines.push(`  pathParams: { ${pathParamFields} };`);
+      lines.push(`};`);
+      lines.push('');
+    }
+
+    // Return type
+    const returnType = op.outputMode === 'list'
+      ? (outputEntityName !== 'void' ? `${outputEntityName}[]` : 'void')
+      : outputEntityName;
+
+    // Fn type
+    if (hasBody || hasPathParams) {
+      lines.push(`export type ${fnTypeName} = (request: ${reqTypeName}) => ${returnType};`);
+    } else {
+      lines.push(`export type ${fnTypeName} = () => ${returnType};`);
+    }
+    lines.push('');
+
+    // Scenario documentation
+    if (scenarioRefs.length > 0) {
+      lines.push(`// The implementation must satisfy these scenarios:`);
+      for (const scenId of scenarioRefs) {
+        const scenario = model.scenarios ? model.scenarios.find(s => s.id === scenId) : null;
+        if (scenario) {
+          let desc = '';
+          if (scenario.fieldRefs && scenario.fieldRefs.length > 0) {
+            const fieldParts = scenario.fieldRefs.map(fr => `${fr.fieldId}=${fr.value}`);
+            desc = ` — ${fieldParts.join(', ')}`;
+          }
+          lines.push(`// \u2713 ${scenId}${' '.repeat(Math.max(1, 40 - scenId.length))}${desc}`);
+        } else {
+          lines.push(`// \u2713 ${scenId}`);
+        }
+      }
+      lines.push('');
+    }
+
+    writeGenerated(path.join(outputDir, 'operations', `${opId}.ts`), lines.join('\n'));
+    summary.operationsStubbed.push(opId);
+  }
+}
+
+// ─── 7. Write gapflags.json ──────────────────────────────────────────────────
 
 function writeGapFlags() {
   const gapFlagsDoc = {
@@ -1233,7 +1337,10 @@ function main() {
   console.log('5. Generating rule stubs...');
   generateRuleStubs();
 
-  console.log('6. Writing gapflags.json...');
+  console.log('6. Generating operation stubs...');
+  generateOperationStubs();
+
+  console.log('7. Writing gapflags.json...');
   writeGapFlags();
 
   // Print summary
@@ -1243,6 +1350,7 @@ function main() {
   console.log(`  Files generated:    ${summary.filesGenerated}`);
   console.log(`  Entities covered:   ${summary.entitiesCovered.length} (${summary.entitiesCovered.join(', ')})`);
   console.log(`  Rules stubbed:      ${summary.rulesStubbed.length} (${summary.rulesStubbed.join(', ')})`);
+  console.log(`  Operations stubbed: ${summary.operationsStubbed.length} (${summary.operationsStubbed.join(', ')})`);
 
   // ── Change C: print gap flag summary ──
   console.log('');

@@ -1,12 +1,12 @@
 // ─────────────────────────────────────────────────────────────────────────────
 // GENERATED FILE — do not edit manually.
-// Source: canonical-model.yaml v1.1.0
+// Source: canonical-model.yaml v1.2.0
 // Generator: codegen.js
 // Regenerate: node codegen.js example.canonical-model.yaml
 // ─────────────────────────────────────────────────────────────────────────────
 
 // intentRef: handle-dunning
-// canonicalModelVersion: 1.1.0
+// canonicalModelVersion: 1.2.0
 // entityRef: subscription
 // scenarioRefs: [dunning-retry-succeeds, dunning-exhausted-cancels-subscription]
 //

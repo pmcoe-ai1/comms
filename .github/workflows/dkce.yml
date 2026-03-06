@@ -146,14 +146,14 @@ jobs:
           github.event.inputs.model == 'all' ||
           github.event.inputs.model == 'example' ||
           github.event.inputs.model == ''
-        run: node codegen.js files/example.canonical-model.yaml
+        run: node codegen.js files/example.canonical-model.yaml --filled-dir ./templates
 
       - name: Codegen — subscription-billing model
         if: >-
           github.event.inputs.model == 'all' ||
           github.event.inputs.model == 'subscription-billing' ||
           github.event.inputs.model == ''
-        run: node codegen.js files/subscription-billing.canonical-model.yaml
+        run: node codegen.js files/subscription-billing.canonical-model.yaml --output-dir ./generated-subscription --filled-dir ./templates-subscription
 
       # ── Stage 6: TypeScript compiler — drift wall ──────────────────────
       - name: tsc --noEmit
@@ -225,8 +225,8 @@ jobs:
 
       - name: Codegen (regenerate for oasdiff comparison)
         run: |
-          node codegen.js files/example.canonical-model.yaml
-          node codegen.js files/subscription-billing.canonical-model.yaml
+          node codegen.js files/example.canonical-model.yaml --filled-dir ./templates
+          node codegen.js files/subscription-billing.canonical-model.yaml --output-dir ./generated-subscription --filled-dir ./templates-subscription
 
       - name: Check for breaking changes
         run: node oasdiff-check.js
@@ -252,8 +252,8 @@ jobs:
 
       - name: Codegen (regenerate for chain hash)
         run: |
-          node codegen.js files/example.canonical-model.yaml
-          node codegen.js files/subscription-billing.canonical-model.yaml
+          node codegen.js files/example.canonical-model.yaml --filled-dir ./templates
+          node codegen.js files/subscription-billing.canonical-model.yaml --output-dir ./generated-subscription --filled-dir ./templates-subscription
 
       - name: Record pipeline run — example model
         env:

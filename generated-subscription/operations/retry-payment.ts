@@ -5,28 +5,23 @@
 // Regenerate: node codegen.js example.canonical-model.yaml
 // ─────────────────────────────────────────────────────────────────────────────
 
-// intentRef: convert-trial-to-active
-// canonicalModelVersion: 1.2.0
-// entityRef: subscription
-// scenarioRefs: [trial-converts-to-active, trial-not-converted-if-cancelled]
+// operation:    retry-payment
+// method:       POST /subscriptions/{subscriptionId}/retry
+// intentRef:    handle-dunning
+// ruleRefs:     [handle-dunning-retry]
+// scenarioRefs: [dunning-retry-succeeds, dunning-exhausted-cancels-subscription]
 //
-// Canonical condition:
-//   AND [
-//     status eq "trialing",
-//     trial-ends-at lt {"$temporal":"now"},
-//   ]
-//
-// Canonical action:
-//   set status = "active"
-//     emit-event subscription.trial-converted
-//
-// IMPLEMENT THIS STUB in: src/rules/convert-trial-on-renewal.ts
+// IMPLEMENT THIS STUB in: src/operations/retry-payment.ts
 // Do not modify this file. Changes here will be overwritten by codegen.
 
 import type { Subscription } from '../interfaces/Subscription';
 
-export type ConvertTrialOnRenewalFn = (subscription: Subscription) => Subscription;
+export type RetryPaymentRequest = {
+  pathParams: { subscriptionId: string };
+};
+
+export type RetryPaymentFn = (request: RetryPaymentRequest) => Subscription;
 
 // The implementation must satisfy these scenarios:
-// ✓ trial-converts-to-active                
-// ✓ trial-not-converted-if-cancelled        
+// ✓ dunning-retry-succeeds                  
+// ✓ dunning-exhausted-cancels-subscription  

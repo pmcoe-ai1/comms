@@ -5,23 +5,19 @@
 // Regenerate: node codegen.js example.canonical-model.yaml
 // ─────────────────────────────────────────────────────────────────────────────
 
-export type PlanInterval =
-  | 'monthly'
-  | 'annual';
+// operation:    get-subscription
+// method:       GET /subscriptions/{subscriptionId}
+// intentRef:    view-subscription-details
+// ruleRefs:     []
+// scenarioRefs: []
+//
+// IMPLEMENT THIS STUB in: src/operations/get-subscription.ts
+// Do not modify this file. Changes here will be overwritten by codegen.
 
-export type SubscriptionStatus =
-  | 'trialing'
-  | 'active'
-  | 'past-due'
-  | 'cancelled'
-  | 'expired';
+import type { Subscription } from '../interfaces/Subscription';
 
-export type BillingRecordType =
-  | 'charge'
-  | 'refund'
-  | 'credit';
+export type GetSubscriptionRequest = {
+  pathParams: { subscriptionId: string };
+};
 
-export type BillingRecordStatus =
-  | 'pending'
-  | 'succeeded'
-  | 'failed';
+export type GetSubscriptionFn = (request: GetSubscriptionRequest) => Subscription;

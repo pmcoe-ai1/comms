@@ -1,6 +1,6 @@
 # ─────────────────────────────────────────────────────────────────────────────
 # GENERATED FILE — do not edit manually.
-# Source: canonical-model.yaml v1.1.0
+# Source: canonical-model.yaml v1.2.0
 # Generator: codegen.js
 # Regenerate: node codegen.js example.canonical-model.yaml
 # ─────────────────────────────────────────────────────────────────────────────
@@ -8,7 +8,7 @@
 openapi: 3.1.0
 info:
   title: subscription-billing API
-  version: 1.1.0
+  version: 1.2.0
   description: Subscription billing domain — plans, subscriptions, billing cycles, payments.
 paths:
   /customers/{customerId}/subscriptions:
@@ -410,7 +410,7 @@ components:
         dunningAttempts:
           type: integer
           minimum: 0
-          maximum: 3
+          maximum: 4
         cancelledAt:
           type: string
           format: date-time
@@ -466,7 +466,7 @@ components:
         dunningAttempts:
           type: integer
           minimum: 0
-          maximum: 3
+          maximum: 4
         cancelledAt:
           type: string
           format: date-time

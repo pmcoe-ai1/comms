@@ -1,29 +1,26 @@
 // ─────────────────────────────────────────────────────────────────────────────
 // GENERATED FILE — do not edit manually.
-// Source: canonical-model.yaml v1.2.0
+// Source: canonical-model.yaml v1.1.0
 // Generator: codegen.js
 // Regenerate: node codegen.js example.canonical-model.yaml
 // ─────────────────────────────────────────────────────────────────────────────
 
-// intentRef: activate-trial-subscription
-// canonicalModelVersion: 1.2.0
-// entityRef: subscription
-// scenarioRefs: [subscription-created-in-trial, subscription-created-without-trial]
+// operation:    mark-order-shipped
+// method:       POST /orders/{orderId}/ship
+// intentRef:    confirm-order-on-payment
+// ruleRefs:     []
+// scenarioRefs: [processing-order-marked-shipped]
 //
-// Canonical condition:
-//   plan-id is-not-null
-//
-// Canonical action:
-//   set status = "trialing"
-//     emit-event subscription.trial-started
-//
-// IMPLEMENT THIS STUB in: src/rules/activate-on-trial-start.ts
+// IMPLEMENT THIS STUB in: src/operations/mark-order-shipped.ts
 // Do not modify this file. Changes here will be overwritten by codegen.
 
-import type { Subscription } from '../interfaces/Subscription';
+import type { Order } from '../interfaces/Order';
 
-export type ActivateOnTrialStartFn = (subscription: Subscription) => Subscription;
+export type MarkOrderShippedRequest = {
+  pathParams: { orderId: string };
+};
+
+export type MarkOrderShippedFn = (request: MarkOrderShippedRequest) => Order;
 
 // The implementation must satisfy these scenarios:
-// ✓ subscription-created-in-trial           
-// ✓ subscription-created-without-trial      
+// ✓ processing-order-marked-shipped         

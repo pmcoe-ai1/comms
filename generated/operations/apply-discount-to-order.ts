@@ -1,29 +1,27 @@
 // ─────────────────────────────────────────────────────────────────────────────
 // GENERATED FILE — do not edit manually.
-// Source: canonical-model.yaml v1.2.0
+// Source: canonical-model.yaml v1.1.0
 // Generator: codegen.js
 // Regenerate: node codegen.js example.canonical-model.yaml
 // ─────────────────────────────────────────────────────────────────────────────
 
-// intentRef: activate-trial-subscription
-// canonicalModelVersion: 1.2.0
-// entityRef: subscription
-// scenarioRefs: [subscription-created-in-trial, subscription-created-without-trial]
+// operation:    apply-discount-to-order
+// method:       POST /orders/{orderId}/discount
+// intentRef:    reward-high-value-orders
+// ruleRefs:     [apply-high-value-discount]
+// scenarioRefs: [high-value-discount-applied, no-discount-below-threshold]
 //
-// Canonical condition:
-//   plan-id is-not-null
-//
-// Canonical action:
-//   set status = "trialing"
-//     emit-event subscription.trial-started
-//
-// IMPLEMENT THIS STUB in: src/rules/activate-on-trial-start.ts
+// IMPLEMENT THIS STUB in: src/operations/apply-discount-to-order.ts
 // Do not modify this file. Changes here will be overwritten by codegen.
 
-import type { Subscription } from '../interfaces/Subscription';
+import type { Order } from '../interfaces/Order';
 
-export type ActivateOnTrialStartFn = (subscription: Subscription) => Subscription;
+export type ApplyDiscountToOrderRequest = {
+  pathParams: { orderId: string };
+};
+
+export type ApplyDiscountToOrderFn = (request: ApplyDiscountToOrderRequest) => Order;
 
 // The implementation must satisfy these scenarios:
-// ✓ subscription-created-in-trial           
-// ✓ subscription-created-without-trial      
+// ✓ high-value-discount-applied              — total=1200, discount=0
+// ✓ no-discount-below-threshold              — total=999, discount=0

@@ -1,12 +1,12 @@
 // ─────────────────────────────────────────────────────────────────────────────
 // GENERATED FILE — do not edit manually.
-// Source: canonical-model.yaml v1.1.0
+// Source: canonical-model.yaml v1.2.0
 // Generator: codegen.js
 // Regenerate: node codegen.js example.canonical-model.yaml
 // ─────────────────────────────────────────────────────────────────────────────
 
 // intentRef: billing-record
-// canonicalModelVersion: 1.1.0
+// canonicalModelVersion: 1.2.0
 // entityRef: billing-record
 
 import type { BillingRecordType, BillingRecordStatus } from './enums';

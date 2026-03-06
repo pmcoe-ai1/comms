@@ -1,27 +1,23 @@
 // ─────────────────────────────────────────────────────────────────────────────
 // GENERATED FILE — do not edit manually.
-// Source: canonical-model.yaml v1.2.0
+// Source: canonical-model.yaml v1.1.0
 // Generator: codegen.js
 // Regenerate: node codegen.js example.canonical-model.yaml
 // ─────────────────────────────────────────────────────────────────────────────
 
-export type PlanInterval =
-  | 'monthly'
-  | 'annual';
+// operation:    list-orders
+// method:       GET /customers/{customerId}/orders
+// intentRef:    —
+// ruleRefs:     []
+// scenarioRefs: []
+//
+// IMPLEMENT THIS STUB in: src/operations/list-orders.ts
+// Do not modify this file. Changes here will be overwritten by codegen.
 
-export type SubscriptionStatus =
-  | 'trialing'
-  | 'active'
-  | 'past-due'
-  | 'cancelled'
-  | 'expired';
+import type { Order } from '../interfaces/Order';
 
-export type BillingRecordType =
-  | 'charge'
-  | 'refund'
-  | 'credit';
+export type ListOrdersRequest = {
+  pathParams: { customerId: string };
+};
 
-export type BillingRecordStatus =
-  | 'pending'
-  | 'succeeded'
-  | 'failed';
+export type ListOrdersFn = (request: ListOrdersRequest) => Order;

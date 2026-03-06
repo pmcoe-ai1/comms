@@ -5,28 +5,24 @@
 // Regenerate: node codegen.js example.canonical-model.yaml
 // ─────────────────────────────────────────────────────────────────────────────
 
-// intentRef: convert-trial-to-active
-// canonicalModelVersion: 1.2.0
-// entityRef: subscription
-// scenarioRefs: [trial-converts-to-active, trial-not-converted-if-cancelled]
+// operation:    subscribe-to-plan
+// method:       POST /customers/{customerId}/subscriptions
+// intentRef:    activate-trial-subscription
+// ruleRefs:     [activate-on-trial-start]
+// scenarioRefs: [subscription-created-in-trial, subscription-created-without-trial]
 //
-// Canonical condition:
-//   AND [
-//     status eq "trialing",
-//     trial-ends-at lt {"$temporal":"now"},
-//   ]
-//
-// Canonical action:
-//   set status = "active"
-//     emit-event subscription.trial-converted
-//
-// IMPLEMENT THIS STUB in: src/rules/convert-trial-on-renewal.ts
+// IMPLEMENT THIS STUB in: src/operations/subscribe-to-plan.ts
 // Do not modify this file. Changes here will be overwritten by codegen.
 
 import type { Subscription } from '../interfaces/Subscription';
 
-export type ConvertTrialOnRenewalFn = (subscription: Subscription) => Subscription;
+export type SubscribeToPlanRequest = {
+  body: Subscription;
+  pathParams: { customerId: string };
+};
+
+export type SubscribeToPlanFn = (request: SubscribeToPlanRequest) => Subscription;
 
 // The implementation must satisfy these scenarios:
-// ✓ trial-converts-to-active                
-// ✓ trial-not-converted-if-cancelled        
+// ✓ subscription-created-in-trial           
+// ✓ subscription-created-without-trial      

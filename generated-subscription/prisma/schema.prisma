@@ -1,6 +1,6 @@
 // ─────────────────────────────────────────────────────────────────────────────
 // GENERATED FILE — do not edit manually.
-// Source: canonical-model.yaml v1.1.0
+// Source: canonical-model.yaml v1.2.0
 // Generator: codegen.js
 // Regenerate: node codegen.js example.canonical-model.yaml
 // ─────────────────────────────────────────────────────────────────────────────
@@ -40,7 +40,7 @@ enum BillingRecordStatus {
 }
 
 /// intentRef: activate-trial-subscription
-/// canonicalModelVersion: 1.1.0
+/// canonicalModelVersion: 1.2.0
 /// entityRef: plan
 model Plan {
   id              String  @id @default(uuid())
@@ -56,7 +56,7 @@ model Plan {
 }
 
 /// intentRef: multiple
-/// canonicalModelVersion: 1.1.0
+/// canonicalModelVersion: 1.2.0
 /// entityRef: subscription
 model Subscription {
   id              String  @id @default(uuid())
@@ -82,7 +82,7 @@ model Subscription {
 }
 
 /// intentRef: billing-record
-/// canonicalModelVersion: 1.1.0
+/// canonicalModelVersion: 1.2.0
 /// entityRef: billing-record
 model BillingRecord {
   id              String  @id @default(uuid())
@@ -100,7 +100,7 @@ model BillingRecord {
 }
 
 /// intentRef: customer
-/// canonicalModelVersion: 1.1.0
+/// canonicalModelVersion: 1.2.0
 /// entityRef: customer
 model Customer {
   id              String  @id @default(uuid())

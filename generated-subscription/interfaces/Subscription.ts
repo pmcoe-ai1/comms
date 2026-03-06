@@ -1,12 +1,12 @@
 // ─────────────────────────────────────────────────────────────────────────────
 // GENERATED FILE — do not edit manually.
-// Source: canonical-model.yaml v1.1.0
+// Source: canonical-model.yaml v1.2.0
 // Generator: codegen.js
 // Regenerate: node codegen.js example.canonical-model.yaml
 // ─────────────────────────────────────────────────────────────────────────────
 
 // intentRef: multiple
-// canonicalModelVersion: 1.1.0
+// canonicalModelVersion: 1.2.0
 // entityRef: subscription
 
 import type { SubscriptionStatus } from './enums';
@@ -20,7 +20,7 @@ export interface Subscription {
   currentPeriodStart: Date; // datetime
   currentPeriodEnd: Date; // datetime
   readonly anchorDate: number; // integer, immutable, validation: {min:1, max:28}
-  dunningAttempts: number; // integer, validation: {min:0, max:3}
+  dunningAttempts: number; // integer, validation: {min:0, max:4}
   cancelledAt: Date | null; // datetime, nullable
   readonly createdAt: Date; // datetime, immutable, system
   readonly updatedAt: Date; // datetime, system

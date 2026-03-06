@@ -5,23 +5,19 @@
 // Regenerate: node codegen.js example.canonical-model.yaml
 // ─────────────────────────────────────────────────────────────────────────────
 
-export type PlanInterval =
-  | 'monthly'
-  | 'annual';
+// operation:    reactivate-subscription
+// method:       POST /subscriptions/{subscriptionId}/reactivate
+// intentRef:    activate-trial-subscription
+// ruleRefs:     []
+// scenarioRefs: []
+//
+// IMPLEMENT THIS STUB in: src/operations/reactivate-subscription.ts
+// Do not modify this file. Changes here will be overwritten by codegen.
 
-export type SubscriptionStatus =
-  | 'trialing'
-  | 'active'
-  | 'past-due'
-  | 'cancelled'
-  | 'expired';
+import type { Subscription } from '../interfaces/Subscription';
 
-export type BillingRecordType =
-  | 'charge'
-  | 'refund'
-  | 'credit';
+export type ReactivateSubscriptionRequest = {
+  pathParams: { subscriptionId: string };
+};
 
-export type BillingRecordStatus =
-  | 'pending'
-  | 'succeeded'
-  | 'failed';
+export type ReactivateSubscriptionFn = (request: ReactivateSubscriptionRequest) => Subscription;

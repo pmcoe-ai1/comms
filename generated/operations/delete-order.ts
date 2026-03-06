@@ -1,27 +1,22 @@
 // ─────────────────────────────────────────────────────────────────────────────
 // GENERATED FILE — do not edit manually.
-// Source: canonical-model.yaml v1.2.0
+// Source: canonical-model.yaml v1.1.0
 // Generator: codegen.js
 // Regenerate: node codegen.js example.canonical-model.yaml
 // ─────────────────────────────────────────────────────────────────────────────
 
-export type PlanInterval =
-  | 'monthly'
-  | 'annual';
+// operation:    delete-order
+// method:       DELETE /orders/{orderId}
+// intentRef:    —
+// ruleRefs:     []
+// scenarioRefs: []
+//
+// IMPLEMENT THIS STUB in: src/operations/delete-order.ts
+// Do not modify this file. Changes here will be overwritten by codegen.
 
-export type SubscriptionStatus =
-  | 'trialing'
-  | 'active'
-  | 'past-due'
-  | 'cancelled'
-  | 'expired';
 
-export type BillingRecordType =
-  | 'charge'
-  | 'refund'
-  | 'credit';
+export type DeleteOrderRequest = {
+  pathParams: { orderId: string };
+};
 
-export type BillingRecordStatus =
-  | 'pending'
-  | 'succeeded'
-  | 'failed';
+export type DeleteOrderFn = (request: DeleteOrderRequest) => void;
