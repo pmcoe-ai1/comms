@@ -1,6 +1,6 @@
 # DKCE + FABRIC Task List
 Generated from: PLAN.md, FABRIC.docx, BUGS.md, direct file verification
-Last updated: 2026-03-10T00:00:00Z
+Last updated: 2026-03-10T04:00:00Z
 ---
 ## How to use this file
 This is the authoritative task tracker for the DKCE + FABRIC project.
@@ -122,7 +122,7 @@ Rules:
 | ID | Task | Status | Depends on | Blocked on | Notes |
 |---|---|---|---|---|---|
 | TASK-46 | Extend chain.js — record cross-object dependency resolutions with exact artifact hashes per pipeline run | ✅ DONE | TASK-16, TASK-29 | — | chain.js: Added dependency_resolutions JSONB column to pipeline_run table. collectDependencyResolutions(modelFile) reads model objectDependencies, resolves each against registry filesystem, captures exact hashes (modelHash, openapiHash, schemaHash, interfaceHash) and consumed operations. cmdRecord() calls collectDependencyResolutions and stores result. Console output lists resolved deps with hashes. 5 new tests (17 chain tests, 485 total). tsc clean. |
-| TASK-47 | Run provider staging promotion gate — registry serves consumer contract test suite, staging promotion blocked until all consumer scenarios pass | ✗ NOT DONE | TASK-38, TASK-43 | — | Unblocked: TASK-43 complete (TASK-38 already done). |
+| TASK-47 | Run provider staging promotion gate — registry serves consumer contract test suite, staging promotion blocked until all consumer scenarios pass | ✅ DONE | TASK-38, TASK-43 | — | registry.js: stage(), findConsumers(), verifyConsumerContracts(), promote() with consumer contract gate. CLI: stage, promote, consumers commands. SQL schema: staging status added. 26 tests in tests/unit/staging-promotion.test.ts. 687 tests pass, tsc clean. Commit ddaf973. |
 
 ---
 
@@ -168,8 +168,8 @@ Source: Remediation/FABRIC-weaknesses-remediation-plan.md v3
 | TASK-98 | Performance declarations in canonical model (Weakness #24) | ✅ DONE | — | — | schema v3.2.0 performance block in $defs.Operation.properties, tests/unit/performance-declarations.test.ts (5 tests), tsc clean, jest 254 pass |
 | TASK-99 | Data migration script generation (Weakness #25) | ✗ NOT DONE | TASK-29, TASK-26 | — | Unblocked: TASK-26 ✅, TASK-29 ✅ |
 | TASK-100 | Compensating action failure handling (Weakness #26) | ✅ DONE | TASK-44 | — | Schema: onCompensationFailure on operation steps (strategy: retry|dead-letter|escalate, maxRetries, backoffMs, deadLetterQueue, escalateSignal). operation-runtime.js: handleCompensationFailure implements all 3 strategies with context handlers. 17 tests in tests/unit/compensation-failure.test.ts. tsc clean, 661 tests pass, both models validate. |
-| TASK-101 | Frontend component contract generation (Weakness #28) | ✗ NOT DONE | TASK-97 | — | Unblocked: TASK-97 ✅ complete |
-| TASK-102 | Event-driven interaction model (Weakness #29) | ✗ NOT DONE | TASK-93, TASK-28 | — | Unblocked: TASK-93 ✅ complete |
+| TASK-101 | Frontend component contract generation (Weakness #28) | ✅ DONE | TASK-97 | — | Schema v3.5.0: ComponentContract type (componentId, entityRef, fields, interactions). codegen.js: generateComponentContracts() produces typed TS interfaces (props, interaction payloads, handlers, full contract). Example model: order-status-form on order-admin-view. 23 tests in tests/unit/component-contracts.test.ts. 710 tests pass, tsc clean. Commit 9546594. |
+| TASK-102 | Event-driven interaction model (Weakness #29) | ✅ DONE | TASK-93, TASK-28 | — | Schema v3.6.0: interactionMode (synchronous|event-driven) on ObjectDependency, subscribedEvents array (eventId, handlerRef, expectedPayloadFields). codegen.js: generateEventHandlerStubs() generates typed event handler stubs with payload interfaces, event envelopes, async handler functions. gate.js: Pass 0 validates subscribed events against provider declarations (SUBSCRIBED_EVENT_NOT_FOUND, EVENT_PAYLOAD_FIELD_MISSING). 44 tests in tests/unit/event-driven-deps.test.ts. 754 tests pass, tsc clean. Commit 459ddf5. |
 | TASK-103 | Registry resilience — HA and fallback (Weakness #30) | ✗ NOT DONE | TASK-26 | — | Unblocked: TASK-26 ✅ |
 | TASK-104 | Scenario quality scoring via mutation testing (Weakness #34, #35) | ✅ DONE | — | — | lib/mutation-test.js (312 lines), tests/unit/mutation-test.test.ts (10 tests), dry-run + real run verified, 2/3 killed (67%), correctly identified boundary gap |
 | TASK-105a | Training signal ground-truth validation (Weakness #18) | ✅ DONE | TASK-72 ✅ | — | lib/ground-truth.js (confidence scoring, review queue, accept/reject, calibration), tests/unit/ground-truth.test.ts (23 tests), CLI integrated, tsc clean, 345 tests pass. Commit 19ed6a7. |
