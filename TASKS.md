@@ -1,6 +1,6 @@
 # DKCE + FABRIC Task List
 Generated from: PLAN.md, FABRIC.docx, BUGS.md, direct file verification
-Last updated: 2026-03-10T04:30:00Z
+Last updated: 2026-03-10T05:00:00Z
 ---
 ## How to use this file
 This is the authoritative task tracker for the DKCE + FABRIC project.
@@ -170,7 +170,7 @@ Source: Remediation/FABRIC-weaknesses-remediation-plan.md v3
 | TASK-100 | Compensating action failure handling (Weakness #26) | ✅ DONE | TASK-44 | — | Schema: onCompensationFailure on operation steps (strategy: retry|dead-letter|escalate, maxRetries, backoffMs, deadLetterQueue, escalateSignal). operation-runtime.js: handleCompensationFailure implements all 3 strategies with context handlers. 17 tests in tests/unit/compensation-failure.test.ts. tsc clean, 661 tests pass, both models validate. |
 | TASK-101 | Frontend component contract generation (Weakness #28) | ✅ DONE | TASK-97 | — | Schema v3.5.0: ComponentContract type (componentId, entityRef, fields, interactions). codegen.js: generateComponentContracts() produces typed TS interfaces (props, interaction payloads, handlers, full contract). Example model: order-status-form on order-admin-view. 23 tests in tests/unit/component-contracts.test.ts. 710 tests pass, tsc clean. Commit 9546594. |
 | TASK-102 | Event-driven interaction model (Weakness #29) | ✅ DONE | TASK-93, TASK-28 | — | Schema v3.6.0: interactionMode (synchronous|event-driven) on ObjectDependency, subscribedEvents array (eventId, handlerRef, expectedPayloadFields). codegen.js: generateEventHandlerStubs() generates typed event handler stubs with payload interfaces, event envelopes, async handler functions. gate.js: Pass 0 validates subscribed events against provider declarations (SUBSCRIBED_EVENT_NOT_FOUND, EVENT_PAYLOAD_FIELD_MISSING). 44 tests in tests/unit/event-driven-deps.test.ts. 754 tests pass, tsc clean. Commit 459ddf5. |
-| TASK-103 | Registry resilience — HA and fallback (Weakness #30) | ✗ NOT DONE | TASK-26 | — | Unblocked: TASK-26 ✅ |
+| TASK-103 | Registry resilience — HA and fallback (Weakness #30) | ✅ DONE | TASK-26 | — | registry.js: health() (healthy/degraded/unhealthy), cacheManifest()/getCachedManifest()/clearCache() for offline manifest storage in .dkce-cache/. CLI: dkce registry health. gate.js: Pass 0 falls back to cached manifest with WARNING when registry unavailable, caches after successful resolution. 26 tests in tests/unit/registry-resilience.test.ts. 830 tests pass, tsc clean. Commit 84eb42f. |
 | TASK-104 | Scenario quality scoring via mutation testing (Weakness #34, #35) | ✅ DONE | — | — | lib/mutation-test.js (312 lines), tests/unit/mutation-test.test.ts (10 tests), dry-run + real run verified, 2/3 killed (67%), correctly identified boundary gap |
 | TASK-105a | Training signal ground-truth validation (Weakness #18) | ✅ DONE | TASK-72 ✅ | — | lib/ground-truth.js (confidence scoring, review queue, accept/reject, calibration), tests/unit/ground-truth.test.ts (23 tests), CLI integrated, tsc clean, 345 tests pass. Commit 19ed6a7. |
 | TASK-105b | Offline fill mode for CI (Weakness #7) | ✅ DONE | — | — | fill.js --offline flag (485 lines total), tests/unit/offline-fill.test.ts (6 tests), cached template reuse verified, API bypass verified, tsc clean, 317 tests pass. Commit 3c35f88. |
