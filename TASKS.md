@@ -1,6 +1,6 @@
 # DKCE + FABRIC Task List
 Generated from: PLAN.md, FABRIC.docx, BUGS.md, direct file verification
-Last updated: 2026-03-10T20:00:00Z
+Last updated: 2026-03-10T20:30:00Z
 ---
 ## How to use this file
 This is the authoritative task tracker for the DKCE + FABRIC project.
@@ -109,7 +109,7 @@ Rules:
 | ID | Task | Status | Depends on | Blocked on | Notes |
 |---|---|---|---|---|---|
 | TASK-39 | Integrate oasdiff into registry publish — classify every change as breaking or non-breaking | ✅ DONE | TASK-27 | — | registry.js: findPreviousVersion() finds latest previously published version in registry filesystem. classifyChanges() runs openapi-diff to detect breaking/non-breaking/unclassified changes. Integrated into publish() step 6b: compares new OpenAPI spec against previous version, stores changeClassification in manifest.json. 8 new tests (30 total registry tests, 476 overall). tsc clean. |
-| TASK-40 | Implement compatibility mode enforcement — breaking changes block consuming pipelines in backward mode | ✗ NOT DONE | TASK-39 | — | — |
+| TASK-40 | Implement compatibility mode enforcement — breaking changes block consuming pipelines in backward mode | ✅ DONE | TASK-39 | — | gate.js Pass 0 now enforces compatibility modes. If provider manifest has changeClassification.hasBreaking=true: backward mode → BREAKING_CHANGE_IN_BACKWARD_MODE error (pipeline blocked), pinned mode → warning (acknowledged), latest mode → warning (auto-adapting). Non-breaking changes logged but allowed. 4 new tests (11 Pass 0 tests, 480 total). tsc clean. |
 | TASK-41 | Implement capability notifications — registry notifies consuming objects when new operation published | ✗ NOT DONE | TASK-39 | — | — |
 | TASK-42 | Implement deprecation protocol — gate emits warnings, pipeline fails after declared removal date | ✗ NOT DONE | TASK-40 | — | — |
 ### Sprint F — Operation runtime
