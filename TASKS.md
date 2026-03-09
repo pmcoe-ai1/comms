@@ -1,6 +1,6 @@
 # DKCE + FABRIC Task List
 Generated from: PLAN.md, FABRIC.docx, BUGS.md, direct file verification
-Last updated: 2026-03-10T20:30:00Z
+Last updated: 2026-03-10T21:00:00Z
 ---
 ## How to use this file
 This is the authoritative task tracker for the DKCE + FABRIC project.
@@ -121,7 +121,7 @@ Rules:
 ### Sprint G — Full audit trail
 | ID | Task | Status | Depends on | Blocked on | Notes |
 |---|---|---|---|---|---|
-| TASK-46 | Extend chain.js — record cross-object dependency resolutions with exact artifact hashes per pipeline run | ✗ NOT DONE | TASK-16, TASK-29 | — | — |
+| TASK-46 | Extend chain.js — record cross-object dependency resolutions with exact artifact hashes per pipeline run | ✅ DONE | TASK-16, TASK-29 | — | chain.js: Added dependency_resolutions JSONB column to pipeline_run table. collectDependencyResolutions(modelFile) reads model objectDependencies, resolves each against registry filesystem, captures exact hashes (modelHash, openapiHash, schemaHash, interfaceHash) and consumed operations. cmdRecord() calls collectDependencyResolutions and stores result. Console output lists resolved deps with hashes. 5 new tests (17 chain tests, 485 total). tsc clean. |
 | TASK-47 | Run provider staging promotion gate — registry serves consumer contract test suite, staging promotion blocked until all consumer scenarios pass | ✗ NOT DONE | TASK-38, TASK-43 | — | — |
 
 ---
