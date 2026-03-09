@@ -1,6 +1,6 @@
 # DKCE + FABRIC Task List
 Generated from: PLAN.md, FABRIC.docx, BUGS.md, direct file verification
-Last updated: 2026-03-10T18:00:00Z
+Last updated: 2026-03-10T18:15:00Z
 ---
 ## How to use this file
 This is the authoritative task tracker for the DKCE + FABRIC project.
@@ -93,7 +93,7 @@ Rules:
 |---|---|---|---|---|---|
 | TASK-28 | Add Gate Pass 0 to gate.js — dependency resolution: unresolvable deps, hash mismatches, breaking changes | ✅ DONE | TASK-26 | — | gate.js Pass 0 reads objectDependencies, resolves each against .dkce-registry/ filesystem store. Checks: PROVIDER_NOT_FOUND (artifact missing), PROVIDER_NOT_PUBLISHED (deprecated status), CONSUMED_OPERATION_NOT_FOUND (operation not in provider), DEPENDENCY_HASH_MISMATCH (declared hash vs registry hash). Always runs (not template-dependent). tests/unit/gate-pass0-deps.test.ts (7 tests). Full suite: 439 tests, 35 suites. tsc clean. All 4 models gate PASS. |
 | TASK-29 | Update codegen to generate generated/dependencies/ typed adapter files from registry artifacts | ✅ DONE | TASK-28 | — | codegen.js generateDependencyAdapters() (lines 1322-1442). Reads model.objectDependencies, resolves providers from .dkce-registry/artifacts/, generates typed adapters at generated/dependencies/<objectId>@<version>/<operationId>.ts. Each adapter exports Request/Response/Error types, Adapter function type, and contract metadata const. Barrel index.ts per dependency. Gap flags: DEPENDENCY_NOT_IN_REGISTRY, CONSUMED_OPERATION_MISSING. Also: findProviderDir() searches by domain name in manifest metadata, tsTypeSimple() standalone type mapper, generateSingleAdapter() per-operation. tests/unit/codegen-dependency-adapters.test.ts (10 tests). Full suite: 449 tests, 36 suites. tsc clean. |
-| TASK-30 | Generate runtime validators inside adapter files — validate cross-object responses at network boundary | ✗ NOT DONE | TASK-29 | — | — |
+| TASK-30 | Generate runtime validators inside adapter files — validate cross-object responses at network boundary | ✅ DONE | TASK-29 | — | codegen.js generateSingleAdapter() now emits validateXxxResponse() function in each adapter file. Validates response shape at network boundary: checks object type, required field presence and types (string, number, boolean, Date), nullable fields optional. Barrel index.ts re-exports validators. Tests: 4 new validator tests (total 14 adapter tests, 453 overall). tsc clean. |
 | TASK-31 | Generate X-Contract-Version response middleware in provider operation stubs | ✗ NOT DONE | TASK-29 | — | — |
 | TASK-32 | Generate version header reader in consuming adapters — fail on version mismatch | ✗ NOT DONE | TASK-31 | — | — |
 ### Sprint D — Second object
