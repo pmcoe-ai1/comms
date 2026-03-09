@@ -1,6 +1,6 @@
 # DKCE + FABRIC Task List
 Generated from: PLAN.md, FABRIC.docx, BUGS.md, direct file verification
-Last updated: 2026-03-09T22:00:00Z
+Last updated: 2026-03-09T23:00:00Z
 ---
 ## How to use this file
 This is the authoritative task tracker for the DKCE + FABRIC project.
@@ -164,11 +164,11 @@ Source: Remediation/FABRIC-weaknesses-remediation-plan.md v3
 | TASK-94 | Rule interaction conflict detection (Weakness #13) | ✅ DONE | TASK-89 ✅ | — | gate.js: detectRuleConflicts after Pass 4. Groups rules by entityRef+action.field, checks condition overlap with mutual exclusion detection. 3 conflict categories: null-condition, priority-ordered, unresolved. 7 tests in tests/unit/gate-rule-conflicts.test.ts. Verified: tsc clean, 235 tests pass, gate passes both models. |
 | TASK-95 | Transitive dependency chain analysis (Weakness #19) | ✅ DONE | TASK-28 | — | lib/transitive-deps.js (395 lines). Functions: loadModelDependencies, loadRegistryGraph, resolveTransitiveDeps (BFS), detectDiamondConflicts, toDot, analyse, check. CLI: analyse/graph/check. tests/unit/transitive-deps.test.ts (18 tests). 530 tests pass, tsc clean. |
 | TASK-96 | Glossary concept drift detection (Weakness #20) | ✅ DONE | — | — | Schema v3.2.0 adds lastReviewedAt+reviewIntervalDays to GlossaryTerm. validate.js:143-167 checks for overdue terms, emits warnings. 4 new tests in glossary-drift.test.ts. tsc clean, 249 tests pass, both models validate. Commit 81e544f. |
-| TASK-97 | Runtime permission middleware generation (Weakness #23) | ✗ NOT DONE | TASK-29 | — | Unblocked: TASK-24 ✅, TASK-29 ✅ |
+| TASK-97 | Runtime permission middleware generation (Weakness #23) | ✅ DONE | TASK-29 | — | Schema v3.4.0: FieldPermission added to $defs, permissions array on UIContract. codegen.js: generatePermissionMiddleware() generates per-entity middleware with checkFieldAccess, permissionMiddleware (403), filterReadableFields. gate.js: Pass 3c permission middleware import checker. 20 tests in tests/unit/permission-middleware.test.ts. tsc clean, 644 tests pass, gate PASS both models. |
 | TASK-98 | Performance declarations in canonical model (Weakness #24) | ✅ DONE | — | — | schema v3.2.0 performance block in $defs.Operation.properties, tests/unit/performance-declarations.test.ts (5 tests), tsc clean, jest 254 pass |
 | TASK-99 | Data migration script generation (Weakness #25) | ✗ NOT DONE | TASK-29, TASK-26 | — | Unblocked: TASK-26 ✅, TASK-29 ✅ |
 | TASK-100 | Compensating action failure handling (Weakness #26) | ✗ NOT DONE | TASK-44 | — | Unblocked: TASK-44 ✅ complete |
-| TASK-101 | Frontend component contract generation (Weakness #28) | ✗ NOT DONE | TASK-97 | TASK-97 | Blocked: TASK-97 (runtime permission middleware) not yet complete |
+| TASK-101 | Frontend component contract generation (Weakness #28) | ✗ NOT DONE | TASK-97 | — | Unblocked: TASK-97 ✅ complete |
 | TASK-102 | Event-driven interaction model (Weakness #29) | ✗ NOT DONE | TASK-93, TASK-28 | — | Unblocked: TASK-93 ✅ complete |
 | TASK-103 | Registry resilience — HA and fallback (Weakness #30) | ✗ NOT DONE | TASK-26 | — | Unblocked: TASK-26 ✅ |
 | TASK-104 | Scenario quality scoring via mutation testing (Weakness #34, #35) | ✅ DONE | — | — | lib/mutation-test.js (312 lines), tests/unit/mutation-test.test.ts (10 tests), dry-run + real run verified, 2/3 killed (67%), correctly identified boundary gap |
