@@ -1,6 +1,6 @@
 # DKCE + FABRIC Task List
 Generated from: PLAN.md, FABRIC.docx, BUGS.md, direct file verification
-Last updated: 2026-03-10T17:30:00Z
+Last updated: 2026-03-10T18:00:00Z
 ---
 ## How to use this file
 This is the authoritative task tracker for the DKCE + FABRIC project.
@@ -101,9 +101,9 @@ Rules:
 |---|---|---|---|---|---|
 | TASK-33 | Author inventory.canonical-model.yaml | ✅ DONE | TASK-25 | — | files/inventory.canonical-model.yaml (19752 bytes). 2 entities (product 11 fields, stock-adjustment 6 fields), 3 rules, 7 operations (check-stock, reserve-stock, release-stock, adjust-stock, get-product, list-products, create-product), 12 scenarios, 6 events. validate PASS, gate PASS (all 3 filled templates pass all 4 passes), codegen 16 files 0 GapFlags, tsc clean, 410 tests pass. |
 | TASK-34 | Run DKCE pipeline against inventory.canonical-model.yaml, publish to registry | ✅ DONE | TASK-33, TASK-27 | — | Pipeline run completed in TASK-33 (validate PASS, gate PASS, codegen 16 files 0 GapFlags, tsc clean). Published a1b2c3d4-e5f6-7890-abcd-ef0123456789@1.0.0 to registry. Artifact ID: 964052e1-a59c-4899-a5d1-4eed3e6386b8. |
-| TASK-35 | Declare inventory dependency in platform.canonical-model.yaml with version pin and compatibility mode | ✗ NOT DONE | TASK-34 | — | — |
-| TASK-36 | Run codegen — generate typed adapter for inventory in generated/dependencies/ | ✗ NOT DONE | TASK-35, TASK-29 | — | — |
-| TASK-37 | Confirm tsc --noEmit enforces inventory adapter contract | ✗ NOT DONE | TASK-36 | — | — |
+| TASK-35 | Declare inventory dependency in platform.canonical-model.yaml with version pin and compatibility mode | ✅ DONE | TASK-34 | — | objectDependencies added at line 107. Depends on inventory@1.0.0, backward mode. Consumes: check-stock (handles PRODUCT_NOT_FOUND, INSUFFICIENT_STOCK; expects available-stock, reserved-stock), get-product (handles PRODUCT_NOT_FOUND; expects sku, name, available-stock). validate PASS, gate PASS (Pass 0 resolves both operations). Also fixed gate Pass 0 domain-name matching (line 665: added metadata.domain check). |
+| TASK-36 | Run codegen — generate typed adapter for inventory in generated/dependencies/ | ✅ DONE | TASK-35, TASK-29 | — | codegen generates generated-platform/dependencies/inventory@1.0.0/{check-stock.ts, get-product.ts, index.ts}. 22 files total generated for platform. CheckStockRequest (pathParams.productId), CheckStockResponse (11 fields), CheckStockError (PRODUCT_NOT_FOUND | INSUFFICIENT_STOCK), GetProductRequest/Response/Error generated. Barrel index.ts re-exports all types. tsc clean, 449 tests pass. |
+| TASK-37 | Confirm tsc --noEmit enforces inventory adapter contract | ✅ DONE | TASK-36 | — | tsc enforcement verified: (1) TS2353 catches unknown field wrongField in CheckStockRequest.pathParams, (2) TS2740 catches missing required fields in CheckStockResponse. Adapter types correctly enforce provider contract at compile time. Full suite: tsc clean, 449 tests pass. |
 | TASK-38 | Generate contract tests — tests/contracts/<objectId>@<version>.contract.test.ts | ✗ NOT DONE | TASK-29 | — | — |
 ### Sprint E — Breaking change detection
 | ID | Task | Status | Depends on | Blocked on | Notes |
