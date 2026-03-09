@@ -1,6 +1,6 @@
 # DKCE + FABRIC Task List
 Generated from: PLAN.md, FABRIC.docx, BUGS.md, direct file verification
-Last updated: 2026-03-09T23:00:00Z
+Last updated: 2026-03-10T00:00:00Z
 ---
 ## How to use this file
 This is the authoritative task tracker for the DKCE + FABRIC project.
@@ -167,7 +167,7 @@ Source: Remediation/FABRIC-weaknesses-remediation-plan.md v3
 | TASK-97 | Runtime permission middleware generation (Weakness #23) | ✅ DONE | TASK-29 | — | Schema v3.4.0: FieldPermission added to $defs, permissions array on UIContract. codegen.js: generatePermissionMiddleware() generates per-entity middleware with checkFieldAccess, permissionMiddleware (403), filterReadableFields. gate.js: Pass 3c permission middleware import checker. 20 tests in tests/unit/permission-middleware.test.ts. tsc clean, 644 tests pass, gate PASS both models. |
 | TASK-98 | Performance declarations in canonical model (Weakness #24) | ✅ DONE | — | — | schema v3.2.0 performance block in $defs.Operation.properties, tests/unit/performance-declarations.test.ts (5 tests), tsc clean, jest 254 pass |
 | TASK-99 | Data migration script generation (Weakness #25) | ✗ NOT DONE | TASK-29, TASK-26 | — | Unblocked: TASK-26 ✅, TASK-29 ✅ |
-| TASK-100 | Compensating action failure handling (Weakness #26) | ✗ NOT DONE | TASK-44 | — | Unblocked: TASK-44 ✅ complete |
+| TASK-100 | Compensating action failure handling (Weakness #26) | ✅ DONE | TASK-44 | — | Schema: onCompensationFailure on operation steps (strategy: retry|dead-letter|escalate, maxRetries, backoffMs, deadLetterQueue, escalateSignal). operation-runtime.js: handleCompensationFailure implements all 3 strategies with context handlers. 17 tests in tests/unit/compensation-failure.test.ts. tsc clean, 661 tests pass, both models validate. |
 | TASK-101 | Frontend component contract generation (Weakness #28) | ✗ NOT DONE | TASK-97 | — | Unblocked: TASK-97 ✅ complete |
 | TASK-102 | Event-driven interaction model (Weakness #29) | ✗ NOT DONE | TASK-93, TASK-28 | — | Unblocked: TASK-93 ✅ complete |
 | TASK-103 | Registry resilience — HA and fallback (Weakness #30) | ✗ NOT DONE | TASK-26 | — | Unblocked: TASK-26 ✅ |
