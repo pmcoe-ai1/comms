@@ -1,6 +1,6 @@
 # DKCE + FABRIC Task List
 Generated from: PLAN.md, FABRIC.docx, BUGS.md, direct file verification
-Last updated: 2026-03-10T18:30:00Z
+Last updated: 2026-03-10T19:00:00Z
 ---
 ## How to use this file
 This is the authoritative task tracker for the DKCE + FABRIC project.
@@ -95,7 +95,7 @@ Rules:
 | TASK-29 | Update codegen to generate generated/dependencies/ typed adapter files from registry artifacts | ✅ DONE | TASK-28 | — | codegen.js generateDependencyAdapters() (lines 1322-1442). Reads model.objectDependencies, resolves providers from .dkce-registry/artifacts/, generates typed adapters at generated/dependencies/<objectId>@<version>/<operationId>.ts. Each adapter exports Request/Response/Error types, Adapter function type, and contract metadata const. Barrel index.ts per dependency. Gap flags: DEPENDENCY_NOT_IN_REGISTRY, CONSUMED_OPERATION_MISSING. Also: findProviderDir() searches by domain name in manifest metadata, tsTypeSimple() standalone type mapper, generateSingleAdapter() per-operation. tests/unit/codegen-dependency-adapters.test.ts (10 tests). Full suite: 449 tests, 36 suites. tsc clean. |
 | TASK-30 | Generate runtime validators inside adapter files — validate cross-object responses at network boundary | ✅ DONE | TASK-29 | — | codegen.js generateSingleAdapter() now emits validateXxxResponse() function in each adapter file. Validates response shape at network boundary: checks object type, required field presence and types (string, number, boolean, Date), nullable fields optional. Barrel index.ts re-exports validators. Tests: 4 new validator tests (total 14 adapter tests, 453 overall). tsc clean. |
 | TASK-31 | Generate X-Contract-Version response middleware in provider operation stubs | ✅ DONE | TASK-29 | — | codegen.js generateContractVersionMiddleware() generates generated/middleware/contract-version.ts. Exports: CONTRACT_VERSION (model version), PROVIDER_DOMAIN, CONTRACT_VERSION_HEADER, contractVersionMiddleware() (Express-compatible), contractVersionHeaders() (standalone). Generated for all domains. tsc clean, 453 tests pass. |
-| TASK-32 | Generate version header reader in consuming adapters — fail on version mismatch | ✗ NOT DONE | TASK-31 | — | — |
+| TASK-32 | Generate version header reader in consuming adapters — fail on version mismatch | ✅ DONE | TASK-31 | — | codegen.js generateSingleAdapter() now emits checkXxxContractVersion(headers) function in each adapter file. Reads X-Contract-Version header (both casings), compares against expected dep version, returns { compatible, providerVersion, expectedVersion }. Barrel index.ts re-exports checkers. 4 new tests (18 adapter tests total, 457 overall). tsc clean. |
 ### Sprint D — Second object
 | ID | Task | Status | Depends on | Blocked on | Notes |
 |---|---|---|---|---|---|
