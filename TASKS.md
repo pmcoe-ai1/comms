@@ -1,9 +1,9 @@
-# DKCE + FABRIC Task List
+# FABRIC Task List
 Generated from: PLAN.md, FABRIC.docx, BUGS.md, direct file verification
 Last updated: 2026-03-10T05:00:00Z
 ---
 ## How to use this file
-This is the authoritative task tracker for the DKCE + FABRIC project.
+This is the authoritative task tracker for the FABRIC project.
 Rules:
 - Read this file at the start of every session before doing anything else
 - Update task status (✗ → ✅) immediately when a task is completed
