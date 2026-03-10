@@ -10,6 +10,49 @@
 
 ---
 
+## Environment Setup
+
+Before starting, ensure the following are available:
+
+| Requirement | Purpose |
+|-------------|---------|
+| `$WORKSPACE` — parent directory for repo clone | Step 0.1 uses `$WORKSPACE` (set to your preferred path, e.g., `~/projects`) |
+| GitHub CLI (`gh`) authenticated | Steps 0.2, B.1 |
+| Node.js >= 18 + npm | All steps |
+| `ANTHROPIC_API_KEY` env var | Step B.4 fill stage (AI-powered template filling) |
+
+All paths in this plan use `$WORKSPACE` as the parent directory. Set it before starting:
+
+```bash
+export WORKSPACE=~/projects   # or your preferred location
+```
+
+---
+
+## Background & Motivation
+
+### The Type Safety Deficiency
+
+Root cause analysis by the Solution Architect identified 138 `as any` / `: any` casts across ARIA tool files (39 casts, 14 files) and MCP tool files (99 casts, 16 files). These casts caused 25+ production defects across three failure modes:
+
+- **Mode A** — Name vs UUID mismatch (tool passes name string where service expects UUID)
+- **Mode B** — Wrong field name (tool reads `config.text` but service returns `config.buttonText`)
+- **Mode C** — Wrong enum value (tool sends `"active"` but schema expects `"published"`)
+
+5 Whys analysis traced the root cause to: **no enforcement mechanism for cross-layer type safety between services, ARIA tools, and MCP tools.**
+
+### Why Two Phases?
+
+**Phase A (Type Contracts)** creates ~80 hand-written interfaces derived from existing `format()` functions. These provide **immediate type safety** — TypeScript will catch field name mismatches, missing properties, and wrong types at compile time. This stops the bleeding.
+
+**Phase B (Canonical Models)** replaces the hand-written interfaces with FABRIC-generated types derived from canonical domain models. This provides **structural type safety** — types are generated from a single source of truth, preventing drift between the database schema, service layer, and tool layer.
+
+**Why not skip Phase A?** Phase B depends on canonical models authored by the Solution Architect (Step B.3), which takes time. Phase A delivers value immediately and serves as a **validation baseline**: when Phase B replaces hand-written interfaces with generated ones, any misalignment between the canonical model and the actual service behavior will surface as compile errors. Without Phase A, there would be no safety net to catch model authoring mistakes.
+
+The Phase A interfaces are intentionally temporary scaffolding. They are replaced by re-exports from generated types in Step B.5, preserving import paths while switching the source of truth.
+
+---
+
 # Mode 1 — Feature Development
 
 ## Step 0: Clone the Codebase
@@ -17,7 +60,7 @@
 ### 0.1 Create the CRM Repository
 
 ```bash
-cd /Users/alankwon/Documents/AI
+cd $WORKSPACE
 cp -R PMCOE-Platform CRM
 cd CRM
 rm -rf .git
@@ -131,28 +174,18 @@ export interface ListLeadsResponse {
 
 ---
 
-## ⛔ STOP — MODE TRANSITION
+## ⛔ CHECKPOINT — COMMIT
 
-**Commit all Mode 1 work.** Steps 0.1 through A.1 are complete.
+**Commit all work so far.** Steps 0.1 through A.1 are complete.
 
 Update PROGRESS.md with:
 - Baseline test count
 - Number of interfaces created
 - Any issues encountered
 
-**Next mode:** Mode 2 (Defect Fix) for steps A.2 through A.5.
-
-**Trigger:** "Go to mode 2. Execute steps A.2 through A.5 from PLAN.md."
+**Continue in Mode 1** for steps A.2 through A.5.
 
 ---
-
-# Mode 2 — Defect Fix
-
-**Evidence (already gathered by Solution Architect):**
-- Root cause: 138 `as any` / `: any` casts across tool files caused 25+ production defects
-- 5 Whys traced to: no enforcement mechanism for cross-layer type safety
-- Three failure modes identified: Mode A (name vs UUID), Mode B (wrong field name), Mode C (wrong enum)
-- Phase A.1 interfaces now exist — the typed contracts are in place
 
 ## Step A.2: Add Return Type Annotations to Service Methods
 
@@ -223,7 +256,7 @@ content: `Button text: "${config.buttonText}"\n`
 | user-tools.ts | 1 | UserService |
 | ui-tools.ts | 0 | (already clean) |
 
-**Gate:** `grep -r "as any" packages/backend/src/services/aria/tools/` → 0 results. Update PROGRESS.md.
+**Gate:** `grep -rn "as any" packages/backend/src/services/aria/tools/` → 0 results. Update PROGRESS.md.
 
 ## Step A.4: Type the MCP HTTP Client
 
@@ -317,13 +350,31 @@ data.leads.map((l) => `${l.firstName} ${l.lastName}`)
 | payments.ts | 3 | 2 | 1 |
 | settings.ts | 3 | 3 | 0 |
 
-**Gate:** `grep -r ": any" packages/mcp-server/src/tools/` → 0 results. Update PROGRESS.md.
+**Gate:** Run the precise `: any` check (excludes legitimate uses like `Record<string, any>`):
+
+```bash
+# Match only the patterns being eliminated:
+#   catch (err: any)     — error handler casts
+#   ): any               — untyped return values
+#   => any               — untyped arrow returns
+#   const/let x: any     — untyped variable declarations
+#   as any               — type assertion casts
+#   (param: any)         — untyped parameters in callbacks
+grep -rn -P "(catch\s*\(\w+:\s*any\)|\):\s*any\b|=>\s*any\b|(const|let|var)\s+\w+:\s*any\b|as\s+any\b|\(\w+:\s*any\))" packages/mcp-server/src/tools/
+# Expected: 0 results
+
+# Sanity check — confirm Record<string, any> is NOT matched:
+echo "Record<string, any>" | grep -P "(catch\s*\(\w+:\s*any\)|\):\s*any\b|=>\s*any\b|(const|let|var)\s+\w+:\s*any\b|as\s+any\b|\(\w+:\s*any\))"
+# Expected: no match (correctly excluded)
+```
+
+Update PROGRESS.md.
 
 ---
 
-## ⛔ STOP — MODE TRANSITION
+## ⛔ CHECKPOINT — COMMIT
 
-**Commit all Mode 2 work.** Steps A.2 through A.5 are complete.
+**Commit all work.** Steps A.2 through A.5 are complete.
 
 Update PROGRESS.md with:
 - Services annotated (should be 30/30)
@@ -331,13 +382,9 @@ Update PROGRESS.md with:
 - MCP `: any` remaining (should be 0/99)
 - Test count (should match baseline)
 
-**Next mode:** Mode 1 (Feature Development) for step A.6.
-
-**Trigger:** "Go to mode 1. Execute step A.6 from PLAN.md."
+**Continue in Mode 1** for step A.6.
 
 ---
-
-# Mode 1 — Feature Development
 
 ## Step A.6: Add Lint Rules to Prevent Regression
 
@@ -393,11 +440,11 @@ Run the complete verification suite:
 
 ```bash
 # 1. Zero as any casts in ARIA tools
-grep -r "as any" packages/backend/src/services/aria/tools/ | wc -l
+grep -rn "as any" packages/backend/src/services/aria/tools/ | wc -l
 # Expected: 0
 
-# 2. Zero : any casts in MCP tools
-grep -r ": any" packages/mcp-server/src/tools/ | wc -l
+# 2. Zero problematic : any casts in MCP tools (precise check)
+grep -rn -P "(catch\s*\(\w+:\s*any\)|\):\s*any\b|=>\s*any\b|(const|let|var)\s+\w+:\s*any\b|as\s+any\b|\(\w+:\s*any\))" packages/mcp-server/src/tools/ | wc -l
 # Expected: 0
 
 # 3. All tests pass
@@ -417,7 +464,7 @@ npx tsc --project packages/mcp-server/src/tools/tsconfig.json --noEmit
 # (manual test, then revert)
 ```
 
-**Gate:** ALL 6 checks must pass. If any fail, switch to Mode 2, fix, then re-audit.
+**Gate:** ALL 6 checks must pass. If any fail, switch to Mode 1, fix, then re-audit.
 
 Update PROGRESS.md with final Phase A results. Mark Phase A as COMPLETE.
 
@@ -433,7 +480,63 @@ Update PROGRESS.md with final Phase A results. Mark Phase A as COMPLETE.
 
 **Do NOT proceed to Phase B until the Solution Architect has delivered the canonical models and updated PROGRESS.md with B.3 = DONE.**
 
-**Trigger for next session:** "Go to mode 1. Execute steps B.1, B.2, B.4 from PLAN.md. The canonical models are ready in /models/."
+**Trigger for next session:** "Go to mode 1. Execute steps B.1, B.2, B.4 from PLAN.md. The canonical models are ready in models/."
+
+---
+
+## Step B.3: Canonical Model Authoring (Solution Architect)
+
+*This step is performed by the Solution Architect Agent, not the Full-Stack Agent. It is included here for completeness and to define acceptance criteria.*
+
+### Target
+
+Author 6 canonical models in FABRIC schema v3.6.0 format. Each model is a YAML file placed in `models/` at the CRM repo root.
+
+### Domains and Sources of Truth
+
+| Domain | Canonical Model File | Primary Service Files | Database Tables | Format Functions |
+|--------|---------------------|-----------------------|-----------------|-----------------|
+| lead-management | `models/lead-management.canonical-model.yaml` | LeadService.ts, ContactSyncService.ts | leads, lead_tags, lead_properties | formatLead, formatExecution, formatEnrollment, formatScoringEvent, formatPayment |
+| journey-engine | `models/journey-engine.canonical-model.yaml` | JourneyService.ts, ExecutionService.ts, JourneyExecutor.ts, SchedulerService.ts | journeys, journey_executions, execution_steps, execution_events, scheduled_actions | formatJourney, formatExecution, formatExecutionStep, formatExecutionEvent, formatAction |
+| survey-feedback | `models/survey-feedback.canonical-model.yaml` | SurveyService.ts, ReplyService.ts | surveys, survey_questions, survey_responses, replies | formatSurvey, formatQuestion, formatReply |
+| monetization | `models/monetization.canonical-model.yaml` | PaymentService.ts, PromoCodeService.ts, EnrollmentService.ts | payments, promo_codes, enrollments | formatPayment, formatPromoCode, formatEnrollment |
+| scoring-alerts | `models/scoring-alerts.canonical-model.yaml` | ScoringService.ts, AlertService.ts | scoring_signals, scoring_events, alerts | formatSignal, formatScoringEvent, formatAlert |
+| platform | `models/platform.canonical-model.yaml` | UserService.ts, AuthService.ts, TemplateService.ts, TemplateCategoryService.ts, SettingsService.ts, DefinitionService.ts, RegistryService.ts, WidgetService.ts | users, email_templates, template_categories, course_definitions, widget_configs | formatUser, formatTemplate, formatCategory, formatDefinition, formatConfig, formatFullConfig |
+
+### Derivation Process
+
+For each domain:
+1. Read the database tables in `docs/schema_v3_2.sql` — these define the persisted fields
+2. Read the `format*()` functions in the service files — these define the API-facing shape
+3. Read the Phase A interfaces in `service-returns.ts` — these are the typed contracts from Step A.1
+4. Author the canonical model YAML with entities, fields, enums, and relationships that cover all three layers
+
+### Validation
+
+After authoring each model:
+
+```bash
+npm run fabric -- validate --domain <domain-name>
+```
+
+The model must pass validation with 0 errors and 0 gap flags.
+
+### Cross-Check
+
+For each model, compare its entity fields against the corresponding `format()` function return fields from the Phase A interfaces:
+
+- Every field in the Phase A interface must have a corresponding field in the canonical model
+- Field types must be compatible (e.g., `string` in TypeScript maps to `string` in the model)
+- Enum values must match the database CHECK constraints or application-level enums
+
+### Acceptance Criteria
+
+All of the following must be true before marking B.3 as DONE:
+1. All 6 model files exist in `models/` directory
+2. All 6 pass `fabric validate` with 0 errors and 0 gap flags
+3. Every field in every Phase A interface has a corresponding canonical model field
+4. Enum values match the database schema and service-level enums
+5. PROGRESS.md updated with entity count, field count, and scenario count per domain
 
 ---
 
@@ -443,26 +546,51 @@ Update PROGRESS.md with final Phase A results. Mark Phase A as COMPLETE.
 
 ## Step B.1: Install FABRIC Tooling
 
-```bash
-# Copy FABRIC from sibling repo
-cp -R /Users/alankwon/Documents/AI/FABRIC/lib ./fabric/lib
-cp -R /Users/alankwon/Documents/AI/FABRIC/bin ./fabric/bin
-cp -R /Users/alankwon/Documents/AI/FABRIC/schema ./fabric/schema
-cp /Users/alankwon/Documents/AI/FABRIC/dkce.config.json ./fabric/dkce.config.json.example
+Add FABRIC as a git submodule pinned to a specific commit:
 
-chmod +x fabric/bin/dkce
+```bash
+git submodule add https://github.com/pmcoe-ai1/FABRIC.git fabric
+cd fabric
+git checkout <commit-hash>   # Pin to the latest stable commit
+cd ..
+git add .gitmodules fabric
+git commit -m "Add FABRIC as git submodule at <commit-hash>"
+```
+
+Verify the binary works:
+```bash
+chmod +x fabric/bin/fabric
+node fabric/bin/fabric --version
 ```
 
 Add to root `package.json` scripts:
 ```json
-"dkce": "node fabric/bin/dkce"
+"fabric": "node fabric/bin/fabric"
 ```
 
-**Gate:** `npm run dkce -- --version` works. Update PROGRESS.md.
+**Gate:** `npm run fabric -- --version` works. Update PROGRESS.md.
 
-## Step B.2: Create DKCE Config
+### Updating FABRIC
 
-**Create:** `dkce.config.json` at CRM monorepo root:
+To pull a newer version of FABRIC in the future:
+
+```bash
+cd fabric
+git fetch origin
+git checkout <new-commit-or-tag>
+cd ..
+git add fabric
+git commit -m "Update FABRIC submodule to <new-commit-or-tag>"
+```
+
+To check which version is currently pinned:
+```bash
+git submodule status
+```
+
+## Step B.2: Create FABRIC Config
+
+**Create:** `fabric.config.json` at CRM monorepo root:
 
 ```json
 {
@@ -504,42 +632,140 @@ Add to root `package.json` scripts:
       "filledDir": "models/templates/platform",
       "rulesDir": "packages/backend/src/rules/platform"
     }
-  },
-  "signals": "dkce-signals.json",
-  "scores": "dkce-confidence-scores.json"
+  }
 }
 ```
 
+**Note on signals and scores:** The FABRIC pipeline supports optional `signals` and `scores` config keys for the signal-collector and confidence-score modules. These are **not used in the initial retrofit** because:
+- Signal collection requires runtime event instrumentation not yet in place
+- Confidence scores are derived from signal data
+
+These will be added in a future phase when the CRM has runtime signal collection. For now, omitting them from the config causes the pipeline to skip those stages gracefully.
+
 **Gate:** Config file exists and is valid JSON. Update PROGRESS.md.
 
-## Step B.4: Run the Pipeline
+## Step B.4: Run the Full FABRIC Pipeline
 
-For each of the 6 domains:
+For each of the 6 domains, run the complete pipeline in order. **Do not skip stages** — each depends on the output of the previous.
+
+### Stage 1: Validate
 
 ```bash
-npm run dkce -- validate --domain lead-management
-npm run dkce -- codegen --domain lead-management
+npm run fabric -- validate --domain lead-management
+```
+
+Confirms the canonical model conforms to schema v3.6.0.
+
+### Stage 2: Generate Fill Templates
+
+```bash
+# Create filledDir directories
+mkdir -p models/templates/lead-management
+mkdir -p models/templates/journey-engine
+mkdir -p models/templates/survey-feedback
+mkdir -p models/templates/monetization
+mkdir -p models/templates/scoring-alerts
+mkdir -p models/templates/platform
+
+# Generate fill templates from the canonical model
+npm run fabric -- template-generator --domain lead-management
+```
+
+This produces template YAML files in the `filledDir` with empty rule slots ready for the fill stage.
+
+### Stage 3: AI Fill
+
+```bash
+npm run fabric -- fill --domain lead-management
+```
+
+**Requires `ANTHROPIC_API_KEY` environment variable.** The fill stage uses Claude to populate rule slots in the templates based on the canonical model's entity definitions and scenarios.
+
+**If `ANTHROPIC_API_KEY` is not available:** The fill stage will fail. You cannot proceed to gate or codegen without filled templates. Set the key and retry:
+```bash
+export ANTHROPIC_API_KEY=<your-key>
+npm run fabric -- fill --domain lead-management
+```
+
+### Stage 4: Gate Passes
+
+```bash
+npm run fabric -- gate --domain lead-management --pass 1
+npm run fabric -- gate --domain lead-management --pass 2
+npm run fabric -- gate --domain lead-management --pass 3
+npm run fabric -- gate --domain lead-management --pass 4
+```
+
+Gate passes validate the filled templates for completeness (Pass 1), consistency (Pass 2), correctness (Pass 3), and coverage (Pass 4). All 4 passes must succeed before codegen.
+
+### Stage 5: Codegen
+
+```bash
+npm run fabric -- codegen --domain lead-management
+```
+
+Generates TypeScript interfaces, operation stubs, rule stubs, OpenAPI specs, and Prisma schemas in the `outputDir`.
+
+### Stage 6: Verify
+
+```bash
 npx tsc --noEmit
 npm test
 ```
 
-Repeat for: journey-engine, survey-feedback, monetization, scoring-alerts, platform.
+### Repeat for all domains
 
-**Gate:** All 6 domains validate and generate. `tsc --noEmit` passes. `npm test` passes. Update PROGRESS.md.
+Run Stages 1–6 for: lead-management, journey-engine, survey-feedback, monetization, scoring-alerts, platform.
+
+**Gate:** All 6 domains pass all stages. `tsc --noEmit` passes. `npm test` passes. Update PROGRESS.md.
+
+## Step B.4.5: Artifact Integration & Schema Reconciliation
+
+FABRIC codegen produces several artifact types per domain. This step documents how each is used in the CRM.
+
+### Generated Artifact Strategy
+
+| Artifact | Location | Strategy |
+|----------|----------|----------|
+| **TypeScript interfaces** | `<outputDir>/interfaces/` | **USED** — Re-exported in Step B.5 to replace hand-written Phase A types |
+| **Operation stubs** | `<outputDir>/operations/` | **Reference-only** — The existing service layer (`packages/backend/src/services/*.ts`) remains the implementation. Generated operation stubs serve as documentation of what the canonical model expects. Do NOT wire them into the service layer. |
+| **Rule stubs** | `<rulesDir>/` | **Reference-only** — No business rules engine exists in the CRM yet. Rule stubs document validation and business logic implied by the canonical model. They may be implemented in a future phase. |
+| **OpenAPI specs** | `<outputDir>/openapi/` | **Reference-only** — The existing `docs/api-spec_v5.yaml` remains the authoritative API contract. Generated OpenAPI specs can be compared against it to identify gaps but do NOT replace it. |
+| **Prisma schemas** | `<outputDir>/prisma/` | **Reference-only** — See reconciliation below. |
+
+### Prisma / Database Schema Reconciliation
+
+The CRM uses raw SQL migrations (`docs/schema_v3_2.sql` + `packages/backend/migrations/`), not Prisma. Generated Prisma schemas are **reference-only** and will NOT be used for database migrations.
+
+**Reconciliation check** — after codegen, compare generated Prisma models against the existing database:
+
+```bash
+# For each domain, diff generated Prisma entity fields against schema_v3_2.sql
+# Look for:
+#   1. Fields in Prisma but not in SQL → canonical model has extra fields (fix model)
+#   2. Fields in SQL but not in Prisma → canonical model is missing fields (fix model)
+#   3. Type mismatches (e.g., Prisma String vs SQL INTEGER)
+```
+
+If discrepancies are found:
+1. Report them to the Solution Architect
+2. The architect updates the canonical model
+3. Re-run the pipeline for the affected domain
+4. Do NOT modify the database schema to match generated Prisma — the SQL schema is the source of truth for persistence
+
+**Gate:** All reconciliation checks pass (no unexpected discrepancies). Update PROGRESS.md.
 
 ---
 
-## ⛔ STOP — MODE TRANSITION
+## ⛔ STOP — COMMIT
 
-**Commit Mode 1 work.** Steps B.1, B.2, B.4 are complete.
+**Commit Mode 1 work.** Steps B.1, B.2, B.4, B.4.5 are complete.
 
-**Next mode:** Mode 2 (Defect Fix) for step B.5 — replacing drift-prone hand-written types with generated types.
+**Continue in Mode 1** for step B.5 — replacing hand-written types with generated types.
 
-**Trigger:** "Go to mode 2. Execute step B.5 from PLAN.md."
+**Trigger:** "Continue mode 1. Execute step B.5 from PLAN.md."
 
 ---
-
-# Mode 2 — Defect Fix
 
 ## Step B.5: Replace Hand-Written Types with Generated Types
 
@@ -568,34 +794,52 @@ Do this for all 6 domains. After each domain:
 
 ---
 
-## ⛔ STOP — MODE TRANSITION
+## ⛔ STOP — COMMIT
 
-**Commit Mode 2 work.** Step B.5 is complete.
+**Commit work.** Step B.5 is complete.
 
-**Next mode:** Mode 1 (Feature Development) for step B.6.
+**Continue in Mode 1** for step B.6.
 
-**Trigger:** "Go to mode 1. Execute step B.6 from PLAN.md."
+**Trigger:** "Continue mode 1. Execute step B.6 from PLAN.md."
 
 ---
 
-# Mode 1 — Feature Development
-
-## Step B.6: Add DKCE to CI
+## Step B.6: Add FABRIC to CI
 
 Add to `.github/workflows/ci.yml`:
 
 ```yaml
-- name: DKCE Validate
-  run: npm run dkce -- validate
+- name: FABRIC Validate
+  run: npm run fabric -- validate
 
-- name: DKCE Codegen
-  run: npm run dkce -- codegen
+- name: FABRIC Gate (models — Pass 3-4)
+  run: |
+    for domain in lead-management journey-engine survey-feedback monetization scoring-alerts platform; do
+      npm run fabric -- gate --domain $domain --pass 3
+      npm run fabric -- gate --domain $domain --pass 4
+    done
+
+- name: FABRIC Gate (filled templates — Pass 1-4)
+  run: |
+    for domain in lead-management journey-engine survey-feedback monetization scoring-alerts platform; do
+      npm run fabric -- gate --domain $domain --pass 1
+      npm run fabric -- gate --domain $domain --pass 2
+      npm run fabric -- gate --domain $domain --pass 3
+      npm run fabric -- gate --domain $domain --pass 4
+    done
+
+- name: FABRIC Codegen
+  run: npm run fabric -- codegen
 
 - name: TypeScript Check (includes generated types)
   run: npx tsc --noEmit
 ```
 
-**Gate:** CI workflow updated. Update PROGRESS.md.
+**Intentionally excluded from CI:**
+- **template-generator** and **fill** — These are authoring-time tools, not build-time checks. Templates are generated once during model authoring and committed to the repo. CI verifies the committed templates via gate passes.
+- **Scenario tests** — Not yet applicable. Will be added when the CRM implements runtime rule evaluation from generated rule stubs.
+
+**Gate:** CI workflow updated. All steps pass. Update PROGRESS.md.
 
 ---
 
@@ -615,32 +859,41 @@ Add to `.github/workflows/ci.yml`:
 
 ```bash
 # 1. All canonical models validate
-npm run dkce -- validate
+npm run fabric -- validate
 # Expected: 0 errors, 0 gap flags for all 6 domains
 
-# 2. Generated types are in use (no hand-written interfaces remain)
+# 2. All gate passes succeed on filled templates
+for domain in lead-management journey-engine survey-feedback monetization scoring-alerts platform; do
+  npm run fabric -- gate --domain $domain --pass 1
+  npm run fabric -- gate --domain $domain --pass 2
+  npm run fabric -- gate --domain $domain --pass 3
+  npm run fabric -- gate --domain $domain --pass 4
+done
+# Expected: all pass
+
+# 3. Generated types are in use (no hand-written interfaces remain)
 grep -c "export interface" packages/backend/src/types/service-returns.ts
 # Expected: 0 (all should be re-exports)
 
-# 3. All tests pass
+# 4. All tests pass
 npm test
 # Expected: same count as Phase A gate
 
-# 4. TypeScript compiles with generated types
+# 5. TypeScript compiles with generated types
 npx tsc --noEmit
 # Expected: 0 errors
 
-# 5. Drift detection — edit a canonical model (rename a field) → re-run codegen → tsc fails
+# 6. Drift detection — edit a canonical model (rename a field) → re-run codegen → tsc fails
 # (manual test, then revert)
 
-# 6. Phase A checks still pass
-grep -r "as any" packages/backend/src/services/aria/tools/ | wc -l
+# 7. Phase A checks still pass
+grep -rn "as any" packages/backend/src/services/aria/tools/ | wc -l
 # Expected: 0
-grep -r ": any" packages/mcp-server/src/tools/ | wc -l
+grep -rn -P "(catch\s*\(\w+:\s*any\)|\):\s*any\b|=>\s*any\b|(const|let|var)\s+\w+:\s*any\b|as\s+any\b|\(\w+:\s*any\))" packages/mcp-server/src/tools/ | wc -l
 # Expected: 0
 ```
 
-**Gate:** ALL 6 checks must pass. Update PROGRESS.md. Mark Phase B as COMPLETE.
+**Gate:** ALL 7 checks must pass. Update PROGRESS.md. Mark Phase B as COMPLETE.
 
 ---
 
@@ -648,31 +901,34 @@ grep -r ": any" packages/mcp-server/src/tools/ | wc -l
 
 ```
 MODE 1 (Feature)     0.1 → 0.2 → 0.3 → 0.4 → A.1
-                     ⛔ STOP — commit, update progress
+                     ⛔ CHECKPOINT — commit, update progress
 
-MODE 2 (Defect Fix)  A.2 → A.3 → A.4 → A.5
-                     ⛔ STOP — commit, update progress
+MODE 1 (Feature)     A.2 → A.3 → A.4 → A.5
+                     ⛔ CHECKPOINT — commit, update progress
 
 MODE 1 (Feature)     A.6
-                     ⛔ STOP — commit, update progress
+                     ⛔ STOP — MODE TRANSITION — commit, update progress
 
 MODE 0 (Audit)       A.7
                      ⛔ STOP — PHASE A COMPLETE — HANDOFF TO ARCHITECT
 
   ┌──────────────────────────────────────────────────────┐
   │  ARCHITECT: Author 6 canonical models (step B.3)     │
+  │  Schema version: v3.6.0                              │
   │  Delivers: models/*.canonical-model.yaml             │
+  │  Validates: fabric validate per domain               │
+  │  Cross-checks: vs Phase A interfaces                 │
   │  Updates PROGRESS.md: B.3 = DONE                     │
   └──────────────────────────────────────────────────────┘
 
-MODE 1 (Feature)     B.1 → B.2 → B.4
-                     ⛔ STOP — commit, update progress
+MODE 1 (Feature)     B.1 → B.2 → B.4 → B.4.5
+                     ⛔ CHECKPOINT — commit, update progress
 
-MODE 2 (Defect Fix)  B.5
-                     ⛔ STOP — commit, update progress
+MODE 1 (Feature)     B.5
+                     ⛔ CHECKPOINT — commit, update progress
 
 MODE 1 (Feature)     B.6
-                     ⛔ STOP — commit, update progress
+                     ⛔ STOP — MODE TRANSITION — commit, update progress
 
 MODE 0 (Audit)       B.7
                      ⛔ DONE — PHASE B COMPLETE
@@ -694,8 +950,13 @@ MODE 0 (Audit)       B.7
 ## Phase B
 | File | Purpose |
 |------|---------|
-| `dkce.config.json` | DKCE domain configuration |
+| `.gitmodules` | FABRIC submodule reference |
+| `fabric/` | FABRIC tooling (git submodule) |
+| `fabric.config.json` | FABRIC domain configuration |
+| `models/*.canonical-model.yaml` | 6 canonical domain models (authored by architect) |
+| `models/templates/*/` | Filled templates for each domain |
 | `packages/backend/src/generated/` | All codegen output (6 domain subdirectories) |
+| `packages/backend/src/rules/` | Generated rule stubs (reference-only) |
 
 # Files Modified
 
@@ -712,7 +973,7 @@ MODE 0 (Audit)       B.7
 | Files | Count | Change |
 |-------|-------|--------|
 | `packages/backend/src/types/service-returns.ts` | 1 | Re-export generated types |
-| `.github/workflows/ci.yml` | 1 | Add DKCE validate + codegen steps |
+| `.github/workflows/ci.yml` | 1 | Add FABRIC validate + gate + codegen steps |
 
 ---
 
@@ -724,9 +985,13 @@ MODE 0 (Audit)       B.7
 | Hand-written interfaces don't match runtime | High | Derive from format() functions, not guessing |
 | Clone has stale dependencies | Low | Run `npm install` fresh in clone |
 | FABRIC codegen doesn't match service returns | Medium | Compare generated vs Phase A interfaces field-by-field |
-| Canonical model disagrees with production schema | High | Author model FROM schema_v3_2.sql |
-| CI takes too long with DKCE steps | Low | Run DKCE only on changed domains |
+| Canonical model disagrees with production schema | High | Author model FROM schema_v3_2.sql; reconcile in B.4.5 |
+| CI takes too long with FABRIC steps | Low | Run FABRIC only on changed domains |
 | Phase B re-export breaks ARIA/MCP imports | Medium | Use type aliases to preserve import paths |
+| `ANTHROPIC_API_KEY` not available for fill stage | High | Document requirement in Environment Setup; fill cannot be skipped |
+| FABRIC submodule version drifts | Low | Pin to specific commit; document update procedure |
+| Generated Prisma conflicts with existing schema | Medium | Prisma is reference-only; SQL schema is source of truth (B.4.5) |
+| Generated operation/rule stubs unused | Low | Explicitly documented as reference-only; no dead code in service layer |
 
 ---
 
