@@ -516,7 +516,7 @@ For each domain:
 After authoring each model:
 
 ```bash
-npm run fabric -- validate --domain <domain-name>
+npm run fabric -- validate models/<domain-name>.canonical-model.yaml
 ```
 
 The model must pass validation with 0 errors and 0 gap flags.
@@ -648,10 +648,20 @@ These will be added in a future phase when the CRM has runtime signal collection
 
 For each of the 6 domains, run the complete pipeline in order. **Do not skip stages** — each depends on the output of the previous.
 
+**CLI reference** (verified from `bin/fabric` source):
+- `fabric validate <model.yaml>` — validate model against schema
+- `fabric template-gen <model.yaml> --output-dir <dir>` — generate fill templates
+- `fabric fill <template.yaml>` — AI-fill a single template (requires `ANTHROPIC_API_KEY`)
+- `fabric gate <filled.yaml> --model <model.yaml>` — run gate Pass 1, 2, 3 on filled template
+- `fabric gate --model <model.yaml>` — run gate Pass 3 only (throw-checker, model-only)
+- `fabric codegen <model.yaml> --output-dir <dir> --filled-dir <dir>` — generate all artifacts
+
+**Note:** The CLI does NOT support `--domain`. All commands take explicit file paths. The `fabric.config.json` created in B.2 is a project reference document; it does not drive CLI routing.
+
 ### Stage 1: Validate
 
 ```bash
-npm run fabric -- validate --domain lead-management
+npm run fabric -- validate models/lead-management.canonical-model.yaml
 ```
 
 Confirms the canonical model conforms to schema v3.6.0.
@@ -659,52 +669,56 @@ Confirms the canonical model conforms to schema v3.6.0.
 ### Stage 2: Generate Fill Templates
 
 ```bash
-# Create filledDir directories
-mkdir -p models/templates/lead-management
-mkdir -p models/templates/journey-engine
-mkdir -p models/templates/survey-feedback
-mkdir -p models/templates/monetization
-mkdir -p models/templates/scoring-alerts
-mkdir -p models/templates/platform
+# Create filledDir directories for all 6 domains
+mkdir -p models/templates/{lead-management,journey-engine,survey-feedback,monetization,scoring-alerts,platform}
 
 # Generate fill templates from the canonical model
-npm run fabric -- template-generator --domain lead-management
+npm run fabric -- template-gen models/lead-management.canonical-model.yaml \
+  --output-dir models/templates/lead-management
 ```
 
-This produces template YAML files in the `filledDir` with empty rule slots ready for the fill stage.
+This produces `*.fill-template.yaml` files in the output directory — one per rule with null condition/action. These contain empty rule slots ready for the fill stage.
 
 ### Stage 3: AI Fill
 
 ```bash
-npm run fabric -- fill --domain lead-management
+# Fill each template individually (one per rule)
+for tmpl in models/templates/lead-management/*.fill-template.yaml; do
+  npm run fabric -- fill "$tmpl"
+done
 ```
 
-**Requires `ANTHROPIC_API_KEY` environment variable.** The fill stage uses Claude to populate rule slots in the templates based on the canonical model's entity definitions and scenarios.
+**Requires `ANTHROPIC_API_KEY` environment variable.** The fill stage calls Claude to populate rule slots in each template. Output files are written as `*.filled.yaml` alongside the templates.
 
 **If `ANTHROPIC_API_KEY` is not available:** The fill stage will fail. You cannot proceed to gate or codegen without filled templates. Set the key and retry:
 ```bash
 export ANTHROPIC_API_KEY=<your-key>
-npm run fabric -- fill --domain lead-management
 ```
 
-### Stage 4: Gate Passes
+### Stage 4: Gate
 
 ```bash
-npm run fabric -- gate --domain lead-management --pass 1
-npm run fabric -- gate --domain lead-management --pass 2
-npm run fabric -- gate --domain lead-management --pass 3
-npm run fabric -- gate --domain lead-management --pass 4
+# Gate on filled templates — runs Pass 1 (structural), 2 (semantic), 3 (throw-checker)
+for filled in models/templates/lead-management/*.filled.yaml; do
+  npm run fabric -- gate "$filled" \
+    --model models/lead-management.canonical-model.yaml
+done
+
+# Gate on model only — runs Pass 3 (throw-checker against src/rules/)
+npm run fabric -- gate --model models/lead-management.canonical-model.yaml
 ```
 
-Gate passes validate the filled templates for completeness (Pass 1), consistency (Pass 2), correctness (Pass 3), and coverage (Pass 4). All 4 passes must succeed before codegen.
+**Note:** Gate does NOT accept a `--pass` flag. It runs all applicable passes in a single invocation: Pass 1+2+3 when given a filled template, or Pass 3 only when given just a model.
 
 ### Stage 5: Codegen
 
 ```bash
-npm run fabric -- codegen --domain lead-management
+npm run fabric -- codegen models/lead-management.canonical-model.yaml \
+  --output-dir packages/backend/src/generated/lead-management \
+  --filled-dir models/templates/lead-management
 ```
 
-Generates TypeScript interfaces, operation stubs, rule stubs, OpenAPI specs, and Prisma schemas in the `outputDir`.
+Generates TypeScript interfaces, operation stubs, rule stubs, OpenAPI specs, and Prisma schemas in the output directory.
 
 ### Stage 6: Verify
 
@@ -715,9 +729,18 @@ npm test
 
 ### Repeat for all domains
 
-Run Stages 1–6 for: lead-management, journey-engine, survey-feedback, monetization, scoring-alerts, platform.
+Run Stages 1–6 for each domain, substituting the appropriate paths from `fabric.config.json`:
 
-**Gate:** All 6 domains pass all stages. `tsc --noEmit` passes. `npm test` passes. Update PROGRESS.md.
+| Domain | Model Path | Output Dir | Filled Dir |
+|--------|-----------|-----------|-----------|
+| lead-management | `models/lead-management.canonical-model.yaml` | `packages/backend/src/generated/lead-management` | `models/templates/lead-management` |
+| journey-engine | `models/journey-engine.canonical-model.yaml` | `packages/backend/src/generated/journey-engine` | `models/templates/journey-engine` |
+| survey-feedback | `models/survey-feedback.canonical-model.yaml` | `packages/backend/src/generated/survey-feedback` | `models/templates/survey-feedback` |
+| monetization | `models/monetization.canonical-model.yaml` | `packages/backend/src/generated/monetization` | `models/templates/monetization` |
+| scoring-alerts | `models/scoring-alerts.canonical-model.yaml` | `packages/backend/src/generated/scoring-alerts` | `models/templates/scoring-alerts` |
+| platform | `models/platform.canonical-model.yaml` | `packages/backend/src/generated/platform` | `models/templates/platform` |
+
+**Gate:** All 6 domains pass all stages. `tsc --noEmit` passes. `npm test` passes. Update PROGRESS.md per domain.
 
 ## Step B.4.5: Artifact Integration & Schema Reconciliation
 
@@ -810,33 +833,40 @@ Add to `.github/workflows/ci.yml`:
 
 ```yaml
 - name: FABRIC Validate
-  run: npm run fabric -- validate
-
-- name: FABRIC Gate (models — Pass 3-4)
   run: |
-    for domain in lead-management journey-engine survey-feedback monetization scoring-alerts platform; do
-      npm run fabric -- gate --domain $domain --pass 3
-      npm run fabric -- gate --domain $domain --pass 4
+    for model in models/*.canonical-model.yaml; do
+      npm run fabric -- validate "$model"
     done
 
-- name: FABRIC Gate (filled templates — Pass 1-4)
+- name: FABRIC Gate (filled templates — Pass 1, 2, 3)
   run: |
     for domain in lead-management journey-engine survey-feedback monetization scoring-alerts platform; do
-      npm run fabric -- gate --domain $domain --pass 1
-      npm run fabric -- gate --domain $domain --pass 2
-      npm run fabric -- gate --domain $domain --pass 3
-      npm run fabric -- gate --domain $domain --pass 4
+      for filled in models/templates/$domain/*.filled.yaml; do
+        [ -f "$filled" ] && npm run fabric -- gate "$filled" \
+          --model "models/$domain.canonical-model.yaml"
+      done
+    done
+
+- name: FABRIC Gate (models — Pass 3 throw-checker)
+  run: |
+    for model in models/*.canonical-model.yaml; do
+      npm run fabric -- gate --model "$model"
     done
 
 - name: FABRIC Codegen
-  run: npm run fabric -- codegen
+  run: |
+    for domain in lead-management journey-engine survey-feedback monetization scoring-alerts platform; do
+      npm run fabric -- codegen "models/$domain.canonical-model.yaml" \
+        --output-dir "packages/backend/src/generated/$domain" \
+        --filled-dir "models/templates/$domain"
+    done
 
 - name: TypeScript Check (includes generated types)
   run: npx tsc --noEmit
 ```
 
 **Intentionally excluded from CI:**
-- **template-generator** and **fill** — These are authoring-time tools, not build-time checks. Templates are generated once during model authoring and committed to the repo. CI verifies the committed templates via gate passes.
+- **template-gen** and **fill** — These are authoring-time tools, not build-time checks. Templates are generated once during model authoring and committed to the repo. CI verifies the committed templates via gate passes.
 - **Scenario tests** — Not yet applicable. Will be added when the CRM implements runtime rule evaluation from generated rule stubs.
 
 **Gate:** CI workflow updated. All steps pass. Update PROGRESS.md.
@@ -859,15 +889,22 @@ Add to `.github/workflows/ci.yml`:
 
 ```bash
 # 1. All canonical models validate
-npm run fabric -- validate
+for model in models/*.canonical-model.yaml; do
+  npm run fabric -- validate "$model"
+done
 # Expected: 0 errors, 0 gap flags for all 6 domains
 
-# 2. All gate passes succeed on filled templates
+# 2. All gate passes succeed
+# 2a. Filled template gates (Pass 1, 2, 3 per filled template)
 for domain in lead-management journey-engine survey-feedback monetization scoring-alerts platform; do
-  npm run fabric -- gate --domain $domain --pass 1
-  npm run fabric -- gate --domain $domain --pass 2
-  npm run fabric -- gate --domain $domain --pass 3
-  npm run fabric -- gate --domain $domain --pass 4
+  for filled in models/templates/$domain/*.filled.yaml; do
+    [ -f "$filled" ] && npm run fabric -- gate "$filled" \
+      --model "models/$domain.canonical-model.yaml"
+  done
+done
+# 2b. Model-only gates (Pass 3 throw-checker)
+for model in models/*.canonical-model.yaml; do
+  npm run fabric -- gate --model "$model"
 done
 # Expected: all pass
 
@@ -892,6 +929,8 @@ grep -rn "as any" packages/backend/src/services/aria/tools/ | wc -l
 grep -rn -P "(catch\s*\(\w+:\s*any\)|\):\s*any\b|=>\s*any\b|(const|let|var)\s+\w+:\s*any\b|as\s+any\b|\(\w+:\s*any\))" packages/mcp-server/src/tools/ | wc -l
 # Expected: 0
 ```
+
+**Note on gate pass counts:** Gate does not accept `--pass` to run individual passes. Each invocation runs all applicable passes automatically. "Pass" counts in PROGRESS.md track gate invocations (one per filled template + one model-only per domain), not individual pass numbers.
 
 **Gate:** ALL 7 checks must pass. Update PROGRESS.md. Mark Phase B as COMPLETE.
 

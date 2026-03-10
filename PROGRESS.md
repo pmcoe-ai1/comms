@@ -98,8 +98,14 @@ Every agent updates this file after completing a step:
 |------|------------|-------|--------|--------|------|
 | B.1 | Install FABRIC tooling (git submodule) | FS | PENDING | Submodule commit: ___ | |
 | B.2 | Create fabric.config.json | FS | PENDING | | |
-| B.4 | Run full pipeline (validate → template-generator → fill → gate → codegen) | FS | PENDING | Domains passing: ___/6 | |
-| B.4.5 | Artifact integration & schema reconciliation | FS | PENDING | Discrepancies: ___ | |
+| B.4 | Run full pipeline per domain (validate → template-gen → fill → gate → codegen) | FS | PENDING | Domains passing: ___/6 | |
+| B.4.1 | — lead-management: validate, template-gen, fill, gate, codegen | FS | PENDING | Templates: ___, Filled: ___, Gate: pass/fail | |
+| B.4.2 | — journey-engine: validate, template-gen, fill, gate, codegen | FS | PENDING | Templates: ___, Filled: ___, Gate: pass/fail | |
+| B.4.3 | — survey-feedback: validate, template-gen, fill, gate, codegen | FS | PENDING | Templates: ___, Filled: ___, Gate: pass/fail | |
+| B.4.4 | — monetization: validate, template-gen, fill, gate, codegen | FS | PENDING | Templates: ___, Filled: ___, Gate: pass/fail | |
+| B.4.5 | — scoring-alerts: validate, template-gen, fill, gate, codegen | FS | PENDING | Templates: ___, Filled: ___, Gate: pass/fail | |
+| B.4.6 | — platform: validate, template-gen, fill, gate, codegen | FS | PENDING | Templates: ___, Filled: ___, Gate: pass/fail | |
+| B.4.7 | Artifact integration & schema reconciliation | FS | PENDING | Discrepancies: ___ | |
 
 ### ⛔ Checkpoint — commit
 
@@ -125,7 +131,8 @@ Every agent updates this file after completing a step:
 |------|------------|-------|--------|--------|------|
 | B.7 | Phase B verification audit | FS | PENDING | | |
 | B.7.1 | — All canonical models validate (0 gaps) | FS | PENDING | Gap flags: ___ | |
-| B.7.2 | — All gate passes succeed (Pass 1-4, all domains) | FS | PENDING | Passes: ___/24 | |
+| B.7.2a | — Filled template gates pass (Pass 1+2+3 per template, all domains) | FS | PENDING | Invocations: ___ pass / ___ fail | |
+| B.7.2b | — Model-only gates pass (Pass 3 throw-checker, all domains) | FS | PENDING | Models: ___/6 pass | |
 | B.7.3 | — No hand-written interfaces remain | FS | PENDING | Count: ___ | |
 | B.7.4 | — npm test passes (Phase A match) | FS | PENDING | Tests: ___/___ | |
 | B.7.5 | — tsc --noEmit = 0 errors | FS | PENDING | Errors: ___ | |
@@ -148,7 +155,8 @@ Every agent updates this file after completing a step:
 | tsc errors | | | |
 | Canonical models validated | 0 | 0 | |
 | Generated type domains | 0 | 0 | |
-| Gate passes (filled templates) | 0 | 0 | |
+| Gate invocations pass (filled templates) | 0 | 0 | |
+| Gate invocations pass (model-only) | 0 | 0 | |
 
 ---
 
@@ -168,4 +176,4 @@ Every agent updates this file after completing a step:
 
 ---
 
-*Last updated: 2026-03-10 by SA (reclassified modes, added B.4.5 and gate pass tracking)*
+*Last updated: 2026-03-10 by SA (round 2: verified CLI syntax, B.4 per-domain sub-steps, gate count clarification)*
